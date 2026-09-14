@@ -1,0 +1,97 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Built from the Atom schema documented in the arXiv API User Manual
+  (https://info.arxiv.org/help/api/user-manual.html), not captured from a live
+  response: arXiv rate-limited every attempt on 14 Sep 2026. Replace it with a real
+  capture at M3, when ingestion fetches for real.
+
+  Entries deliberately cover: a fully-populated paper; one with no doi and no
+  journal_ref (FR-2.3); an old-style id with a version suffix, five authors,
+  three categories and a hard-wrapped abstract (FR-2.4, FR-2.5); and both the
+  "Z" and "+00:00" date spellings.
+-->
+<feed xmlns="http://www.w3.org/2005/Atom"
+      xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/"
+      xmlns:arxiv="http://arxiv.org/schemas/atom">
+  <link href="http://arxiv.org/api/query?search_query=cat:cs.AI&amp;start=0&amp;max_results=3"
+        rel="self" type="application/atom+xml"/>
+  <title>ArXiv Query: search_query=cat:cs.AI&amp;start=0&amp;max_results=3</title>
+  <id>http://arxiv.org/api/JQ4S8hL2pQ0vN3xRtYmZbKcWdEf</id>
+  <updated>2026-09-14T00:00:00-04:00</updated>
+  <opensearch:totalResults>184213</opensearch:totalResults>
+  <opensearch:startIndex>0</opensearch:startIndex>
+  <opensearch:itemsPerPage>3</opensearch:itemsPerPage>
+
+  <entry>
+    <id>http://arxiv.org/abs/2409.01234v1</id>
+    <published>2026-09-02T09:15:44Z</published>
+    <updated>2026-09-12T11:02:07Z</updated>
+    <title>Retrieval-Augmented Generation over Scientific Abstracts</title>
+    <summary>  We study grounded question answering over a corpus of paper abstracts.</summary>
+    <author>
+      <name>Aiko Tanaka</name>
+    </author>
+    <author>
+      <name>Rahul Mehta</name>
+    </author>
+    <author>
+      <name>Sofia Bergström</name>
+    </author>
+    <arxiv:comment>12 pages, 4 figures</arxiv:comment>
+    <arxiv:journal_ref>JMLR 27 (2026) 1-24</arxiv:journal_ref>
+    <arxiv:doi>10.1000/jmlr.2026.0001</arxiv:doi>
+    <link href="http://arxiv.org/abs/2409.01234v1" rel="alternate" type="text/html"/>
+    <link href="http://arxiv.org/pdf/2409.01234v1" rel="related" type="application/pdf" title="pdf"/>
+    <arxiv:primary_category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+  </entry>
+
+  <entry>
+    <id>http://arxiv.org/abs/2409.05678v2</id>
+    <published>2026-09-08T16:40:00Z</published>
+    <updated>2026-09-11T08:22:31Z</updated>
+    <title>A Note on Vector Index Selection</title>
+    <summary>  Exact search remains competitive at small corpus sizes.</summary>
+    <author>
+      <name>Priya Nair</name>
+    </author>
+    <link href="http://arxiv.org/abs/2409.05678v2" rel="alternate" type="text/html"/>
+    <arxiv:primary_category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+  </entry>
+
+  <entry>
+    <id>http://arxiv.org/abs/cond-mat/0211034v3</id>
+    <published>2002-11-15T12:00:00-05:00</published>
+    <updated>2026-09-10T07:00:00+00:00</updated>
+    <title>Thermal Conductivity in Disordered
+  Low-Dimensional Systems</title>
+    <summary>  We revisit transport in disordered chains and show that the
+conductivity follows a scaling law across three decades. The
+analysis uses a transfer-matrix method, and we compare against
+prior numerical work.
+</summary>
+    <author>
+      <name>Émile Durand</name>
+    </author>
+    <author>
+      <name>Wei Zhang</name>
+    </author>
+    <author>
+      <name>Olusegun Adeyemi</name>
+    </author>
+    <author>
+      <name>Maria José Ferreira</name>
+    </author>
+    <author>
+      <name>Jan Novák</name>
+    </author>
+    <arxiv:comment>Revised version, typos fixed</arxiv:comment>
+    <link href="http://arxiv.org/abs/cond-mat/0211034v3" rel="alternate" type="text/html"/>
+    <arxiv:primary_category term="cond-mat.stat-mech" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cond-mat.stat-mech" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cond-mat.dis-nn" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="physics.comp-ph" scheme="http://arxiv.org/schemas/atom"/>
+  </entry>
+</feed>
