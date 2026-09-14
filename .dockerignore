@@ -1,0 +1,15 @@
+# Secrets must never reach the image. `.env` is a runtime concern (compose env_file),
+# never a build-time one -- a key baked into a layer survives even if the file is deleted.
+.env
+.env.*
+!.env.example
+
+.git
+.venv
+.pytest_cache
+.ruff_cache
+**/__pycache__
+*.pyc
+
+docs/local
+.claude

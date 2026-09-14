@@ -16,5 +16,24 @@ services:
       timeout: 3s
       retries: 20
 
+  api:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy   # a cold first `up` must not race initdb
+    env_file: .env
+    environment:
+      # Inside the compose network the database is `db`, not localhost. The DATABASE_URL in
+      # .env is for running the CLI from your host; this overrides it for the container.
+      DATABASE_URL: postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@db:5432/${POSTGRES_DB}
+    ports:
+      - "${API_PORT:-8000}:8000"
+    healthcheck:
+      # /health queries the database, so "healthy" means "can actually serve".
+      test: ["CMD-SHELL", "python -c \"import urllib.request as u; u.urlopen('http://localhost:8000/health')\""]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
 volumes:
   pgdata:
