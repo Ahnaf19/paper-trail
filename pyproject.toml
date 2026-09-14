@@ -1,7 +1,65 @@
 [project]
 name = "pipeline"
 version = "0.1.0"
-description = "Add your description here"
+description = "Ingest arXiv papers into Postgres, serve SQL aggregates, and answer questions over the abstracts with RAG."
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = []
+dependencies = [
+    "alembic>=1.20.0",
+    "asyncpg>=0.31.0",
+    "fastapi>=0.141.1",
+    "httpx>=0.28.1",
+    "loguru>=0.7.3",
+    "pgvector>=0.5.0",
+    "psycopg[binary]>=3.3.5",
+    "pydantic-settings>=2.15.0",
+    "sqlalchemy>=2.0",
+    "typer>=0.27.2",
+    "uvicorn[standard]>=0.53.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+    "ruff>=0.16.7",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/pipeline"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["src", "tests"]
+
+[tool.ruff.lint]
+select = [
+    "E", "W",   # pycodestyle
+    "F",        # pyflakes
+    "I",        # import sorting
+    "UP",       # pyupgrade — keeps `str | None` over `Optional[str]`
+    "B",        # bugbear — real bug shapes, not style
+    "SIM",      # needless complexity
+    "N",        # pep8 naming
+    "C4",       # comprehensions
+    "ANN",      # every signature is annotated (a stated non-negotiable)
+    "S",        # bandit — security is an explicit review axis
+    "RUF",
+]
+# The formatter owns line length; ANN401 would ban `Any` in the few places it is honest.
+ignore = ["E501", "ANN401"]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests assert (S101), use fixture values that look like secrets (S105/S106),
+# and gain nothing from annotating every fixture.
+"tests/**" = ["S101", "S105", "S106", "ANN"]
+# Alembic migrations are generated; their signatures are fixed by the tool.
+"alembic/versions/*" = ["ANN", "E402"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"

@@ -9,6 +9,11 @@ wheels/
 # Virtual environments
 .venv
 
+# Secrets — only .env.example is ever committed
+.env
+.env.*
+!.env.example
+
 docs/local
 # local development tooling — not part of the submission
 .claude/
