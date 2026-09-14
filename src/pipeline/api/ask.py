@@ -13,7 +13,13 @@ from pipeline.config import settings
 from pipeline.db import get_session
 from pipeline.embeddings import Embedder
 from pipeline.llm import LLMClient, LLMUnavailableError
-from pipeline.prompts import NO_ANSWER, SYSTEM_PROMPT, build_context, build_user_message
+from pipeline.prompts import (
+    NO_ANSWER,
+    SYSTEM_PROMPT,
+    build_user_message,
+    fit_context,
+    render_context,
+)
 from pipeline.retrieval import RetrievedPaper, retrieve
 
 router = APIRouter(tags=["ask"])
@@ -65,8 +71,11 @@ async def ask(
         )
         return Answer(answer=NO_ANSWER, sources=[])
 
-    sources = _sources(relevant)
-    context = build_context(relevant, max_chars=settings.max_context_chars)
+    # Sources come from the papers that fit, not from everything that cleared the
+    # threshold -- otherwise a large top-k would cite context the model never saw.
+    used = fit_context(relevant, max_chars=settings.max_context_chars)
+    sources = _sources(used)
+    context = render_context(used)
     began = time.perf_counter()
     try:
         answer = await llm.complete(SYSTEM_PROMPT, build_user_message(question, context))
@@ -83,7 +92,7 @@ async def ask(
     logger.info(
         "ask answered: chars={} best={:.3f} sources={} llm={:.0f}ms",
         len(question),
-        relevant[0].score,
+        used[0].score,
         len(sources),
         (time.perf_counter() - began) * 1000,
     )

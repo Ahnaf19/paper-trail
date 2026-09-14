@@ -19,17 +19,32 @@ Rules:
 NO_ANSWER = "I don't have information about that in the paper dataset."
 
 
-def build_context(papers: Sequence[RetrievedPaper], *, max_chars: int) -> str:
-    """Delimited, labelled, and bounded so a large k cannot overrun the context window."""
-    blocks: list[str] = []
+def _block(paper: RetrievedPaper) -> str:
+    return (
+        f'<paper id="{paper.arxiv_id}">\nTitle: {paper.title}\nAbstract: {paper.abstract}\n</paper>'
+    )
+
+
+def fit_context(papers: Sequence[RetrievedPaper], *, max_chars: int) -> list[RetrievedPaper]:
+    """The papers that fit the budget — and the list `sources` must be derived from.
+
+    Choosing the papers separately from rendering them is what keeps `sources` honest: derive
+    it from the full top-k instead and a large `k` would cite context the model never saw.
+    """
+    fitted: list[RetrievedPaper] = []
     used = 0
     for paper in papers:
-        block = f'<paper id="{paper.arxiv_id}">\nTitle: {paper.title}\nAbstract: {paper.abstract}\n</paper>'
-        if used + len(block) > max_chars:
+        size = len(_block(paper))
+        if fitted and used + size > max_chars:
             break
-        blocks.append(block)
-        used += len(block)
-    return "\n\n".join(blocks)
+        fitted.append(paper)  # the best match always goes in, however long it is
+        used += size
+    return fitted
+
+
+def render_context(papers: Sequence[RetrievedPaper]) -> str:
+    """Delimited and labelled, so the model can tell our framing from third-party text."""
+    return "\n\n".join(_block(paper) for paper in papers)
 
 
 def build_user_message(question: str, context: str) -> str:

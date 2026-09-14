@@ -2,6 +2,7 @@
 
 import pytest
 
+from pipeline.config import settings
 from pipeline.embeddings import refresh_embeddings
 from pipeline.llm import LLMUnavailableError
 from pipeline.upsert import upsert_papers
@@ -119,3 +120,16 @@ def test_k_larger_than_the_corpus_is_fine(client, session, fake_embedder, stub_l
     body = ask(client, "Tell me about transformer models").json()
 
     assert len(body["sources"]) == 1
+
+
+def test_sources_never_claim_context_the_model_did_not_see(client, corpus, stub_llm, monkeypatch):
+    """A tight context budget must shrink `sources` too, or the response overclaims."""
+    monkeypatch.setattr(settings, "max_context_chars", 1)
+
+    body = ask(client, "Tell me about transformer models").json()
+    _system, user = stub_llm.calls[0]
+
+    assert len(body["sources"]) == 1  # both cleared the threshold; only one fits
+    assert body["sources"][0]["arxiv_id"] in user
+    for source in body["sources"]:
+        assert source["arxiv_id"] in user
