@@ -1,5 +1,8 @@
-"""Builds the FastAPI application and serves the health check."""
+"""Builds the FastAPI application, owns its long-lived resources, and serves the health check."""
 
+import asyncio
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request, status
@@ -10,7 +13,10 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from pipeline.api.analytics import router as analytics_router
+from pipeline.api.ask import router as ask_router
 from pipeline.db import get_session
+from pipeline.embeddings import FastEmbedEmbedder
+from pipeline.llm import OpenAICompatibleClient
 from pipeline.logging import configure_logging
 
 _DESCRIPTION = """
@@ -33,10 +39,28 @@ async def _database_unavailable(request: Request, exc: Exception) -> JSONRespons
     )
 
 
+@asynccontextmanager
+async def lifespan(application: FastAPI) -> AsyncIterator[None]:
+    """Warm the embedder before serving, so the model download is a startup cost.
+
+    Tests assign `app.state.embedder` first and this leaves it alone — which keeps the
+    suite off the network without a test-only config flag.
+    """
+    if not getattr(application.state, "embedder", None):
+        application.state.embedder = FastEmbedEmbedder()
+    if not getattr(application.state, "llm", None):
+        application.state.llm = OpenAICompatibleClient()
+    await asyncio.to_thread(application.state.embedder.embed_query, "warmup")
+    logger.info("embedder ready: {}", application.state.embedder.model_id)
+    yield
+
+
 def create_app() -> FastAPI:
     """One app per process. Routers are mounted here, never imported for side effects."""
     configure_logging()
-    application = FastAPI(title="arXiv corpus API", version="0.1.0", description=_DESCRIPTION)
+    application = FastAPI(
+        title="arXiv corpus API", version="0.1.0", description=_DESCRIPTION, lifespan=lifespan
+    )
 
     @application.get("/health", tags=["ops"])
     async def health(session: Annotated[AsyncSession, Depends(get_session)]) -> dict[str, str]:
@@ -45,6 +69,7 @@ def create_app() -> FastAPI:
         return {"status": "ok"}
 
     application.include_router(analytics_router)
+    application.include_router(ask_router)
     for failure in _DB_UNAVAILABLE:
         application.add_exception_handler(failure, _database_unavailable)
     return application
