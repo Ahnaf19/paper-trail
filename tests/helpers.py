@@ -13,6 +13,7 @@ DEFAULT_TIME = datetime(2026, 9, 1, 12, 0, tzinfo=UTC)
 def make_paper(
     arxiv_id: str = "2409.00001",
     *,
+    published: datetime = DEFAULT_TIME,
     updated: datetime = DEFAULT_TIME,
     authors: list[str] | None = None,
     categories: list[str] | None = None,
@@ -26,7 +27,7 @@ def make_paper(
         primary_category=categories[0],
         categories=categories,
         authors=["Ada Lovelace"] if authors is None else authors,
-        published=DEFAULT_TIME,
+        published=published,
         updated=updated,
         doi=kwargs.get("doi"),
         journal_ref=kwargs.get("journal_ref"),

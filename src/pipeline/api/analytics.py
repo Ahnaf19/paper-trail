@@ -43,7 +43,7 @@ async def papers_over_time(
     missing point, and a fabricated zero row is a claim we cannot make about a sparse corpus.
     """
     if date_from and date_to and date_from > date_to:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, "`from` is after `to`")
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "`from` is after `to`")
 
     # date_trunc on a timestamptz silently uses the session's time zone; pinning it to UTC
     # is what makes the same corpus bucket identically for every caller.
