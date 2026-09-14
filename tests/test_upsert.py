@@ -1,29 +1,13 @@
 """Upsert tests against a real database — the behaviour being tested is Postgres's."""
 
-from datetime import UTC, datetime, timedelta
+from datetime import timedelta
 
 from sqlalchemy import func, select
 
-from pipeline.arxiv_parser import ArxivPaper
 from pipeline.models import Author, Category, Paper, PaperAuthor, PaperCategory
 from pipeline.upsert import upsert_papers
-
-NOW = datetime(2026, 9, 1, 12, 0, tzinfo=UTC)
-
-
-def make_paper(arxiv_id="2409.00001", *, updated=NOW, authors=None, categories=None, **kwargs):
-    return ArxivPaper(
-        arxiv_id=arxiv_id,
-        title=kwargs.get("title", "A Title"),
-        abstract=kwargs.get("abstract", "An abstract."),
-        primary_category=(categories or ["cs.AI"])[0],
-        categories=categories or ["cs.AI"],
-        authors=authors if authors is not None else ["Ada Lovelace"],
-        published=NOW,
-        updated=updated,
-        doi=kwargs.get("doi"),
-        journal_ref=kwargs.get("journal_ref"),
-    )
+from tests.helpers import DEFAULT_TIME as NOW
+from tests.helpers import make_paper
 
 
 def count(session, model) -> int:

@@ -37,6 +37,7 @@ class Settings(BaseSettings):
     arxiv_max_retries: int = Field(default=5, ge=0)
     arxiv_timeout_seconds: float = Field(default=60.0, gt=0)
     arxiv_user_agent: str = "pipeline-arxiv-assessment/0.1"
+    arxiv_watermark_margin_days: int = Field(default=1, ge=0)  # covers page-boundary drift
 
     @property
     def sync_database_url(self) -> str:
