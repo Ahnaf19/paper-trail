@@ -43,6 +43,11 @@ class Settings(BaseSettings):
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     embedding_batch_size: int = Field(default=64, ge=1)
 
+    # Retrieval (PRD §6.10). The threshold is calibrated -- see the note below.
+    retrieval_top_k: int = Field(default=5, ge=1, le=20)
+    relevance_threshold: float = Field(default=0.73, ge=0.0, le=1.0)
+    max_question_chars: int = Field(default=1000, ge=1)
+
     @property
     def sync_database_url(self) -> str:
         """For the ingestion CLI and Alembic (PRD §6.9)."""
@@ -53,5 +58,17 @@ class Settings(BaseSettings):
         """For the API (PRD §6.9)."""
         return _with_driver(str(self.database_url), _ASYNC_DRIVER)
 
+
+# RELEVANCE_THRESHOLD, calibrated 15 Sep 2026 against the 1,200-paper corpus -- not guessed.
+#
+# 23 questions, three groups, top-1 cosine similarity:
+#     in-corpus (12)                    0.765 .. 0.872
+#     adjacent CS, absent from corpus (5)  0.639 .. 0.706   <- the group that decides it
+#     off-topic (6)                     0.471 .. 0.583
+#
+# Separable window is (0.706, 0.765]; 0.73 sits near its midpoint. The middle group is the
+# point: bge scores unrelated computer science at 0.64-0.71, so a plausible 0.5 would answer
+# "what is the CAP theorem?" out of AI abstracts. Separating arXiv from baking is trivial and
+# proves nothing. Re-calibrate if the corpus or the embedding model changes.
 
 settings = Settings()
