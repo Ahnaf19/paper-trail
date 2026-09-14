@@ -1,97 +1,1282 @@
-<?xml version="1.0" encoding="utf-8"?>
+<?xml version='1.0' encoding='UTF-8'?>
 <!--
-  Built from the Atom schema documented in the arXiv API User Manual
-  (https://info.arxiv.org/help/api/user-manual.html), not captured from a live
-  response: arXiv rate-limited every attempt on 14 Sep 2026. Replace it with a real
-  capture at M3, when ingestion fetches for real.
-
-  Entries deliberately cover: a fully-populated paper; one with no doi and no
-  journal_ref (FR-2.3); an old-style id with a version suffix, five authors,
-  three categories and a hard-wrapped abstract (FR-2.4, FR-2.5); and both the
-  "Z" and "+00:00" date spellings.
+  Real arXiv response, captured 15 Sep 2026:
+    GET https://export.arxiv.org/api/query?search_query=cat:cs.AI&start=0&max_results=50
+  50 entries. Only 1 carries a doi and 3 a journal_ref, so absence is the common case
+  rather than an edge one. No sortBy: ordering is the watermark's concern, not parsing's.
 -->
-<feed xmlns="http://www.w3.org/2005/Atom"
-      xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/"
-      xmlns:arxiv="http://arxiv.org/schemas/atom">
-  <link href="http://arxiv.org/api/query?search_query=cat:cs.AI&amp;start=0&amp;max_results=3"
-        rel="self" type="application/atom+xml"/>
-  <title>ArXiv Query: search_query=cat:cs.AI&amp;start=0&amp;max_results=3</title>
-  <id>http://arxiv.org/api/JQ4S8hL2pQ0vN3xRtYmZbKcWdEf</id>
-  <updated>2026-09-14T00:00:00-04:00</updated>
-  <opensearch:totalResults>184213</opensearch:totalResults>
+<feed xmlns:opensearch="http://a9.com/-/spec/opensearch/1.1/" xmlns:arxiv="http://arxiv.org/schemas/atom" xmlns="http://www.w3.org/2005/Atom">
+  <id>https://arxiv.org/api/Wlqoh6MzMwsFAZR/0iqJ30ff8ss</id>
+  <title>arXiv Query: search_query=cat:cs.AI&amp;id_list=&amp;start=0&amp;max_results=50</title>
+  <updated>2026-09-14T16:44:20Z</updated>
+  <link href="https://arxiv.org/api/query?search_query=cat:cs.AI&amp;start=0&amp;max_results=50&amp;id_list=" type="application/atom+xml"/>
+  <opensearch:itemsPerPage>50</opensearch:itemsPerPage>
+  <opensearch:totalResults>199389</opensearch:totalResults>
   <opensearch:startIndex>0</opensearch:startIndex>
-  <opensearch:itemsPerPage>3</opensearch:itemsPerPage>
-
   <entry>
-    <id>http://arxiv.org/abs/2409.01234v1</id>
-    <published>2026-09-02T09:15:44Z</published>
-    <updated>2026-09-12T11:02:07Z</updated>
-    <title>Retrieval-Augmented Generation over Scientific Abstracts</title>
-    <summary>  We study grounded question answering over a corpus of paper abstracts.</summary>
+    <id>http://arxiv.org/abs/2012.12104v1</id>
+    <title>A Deep Reinforcement Learning Approach for Ramp Metering Based on Traffic Video Data</title>
+    <updated>2020-12-09T05:08:41Z</updated>
+    <link href="https://arxiv.org/abs/2012.12104v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2012.12104v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Ramp metering that uses traffic signals to regulate vehicle flows from the on-ramps has been widely implemented to improve vehicle mobility of the freeway. Previous studies generally update signal timings in real-time based on predefined traffic measures collected by point detectors, such as traffic volumes and occupancies. Comparing with point detectors, traffic cameras-which have been increasingly deployed on road networks-could cover larger areas and provide more detailed traffic information. In this work, we propose a deep reinforcement learning (DRL) method to explore the potential of traffic video data in improving the efficiency of ramp metering. The proposed method uses traffic video frames as inputs and learns the optimal control strategies directly from the high-dimensional visual inputs. A real-world case study demonstrates that, in comparison with a state-of-the-practice method, the proposed DRL method results in 1) lower travel times in the mainline, 2) shorter vehicle queues at the on-ramp, and 3) higher traffic flows downstream of the merging area. The results suggest that the proposed method is able to extract useful information from the video data for better ramp metering controls.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-12-09T05:08:41Z</published>
+    <arxiv:primary_category term="cs.CV"/>
     <author>
-      <name>Aiko Tanaka</name>
+      <name>Bing Liu</name>
+      <arxiv:affiliation>Key Laboratory of Road and Traffic Engineering of the Ministry of Education, Tongji University, Shanghai, China</arxiv:affiliation>
     </author>
     <author>
-      <name>Rahul Mehta</name>
+      <name>Yu Tang</name>
+      <arxiv:affiliation>Tandon School of Engineering, New York University, New York, USA</arxiv:affiliation>
     </author>
     <author>
-      <name>Sofia Bergström</name>
+      <name>Yuxiong Ji</name>
+      <arxiv:affiliation>Key Laboratory of Road and Traffic Engineering of the Ministry of Education, Tongji University, Shanghai, China</arxiv:affiliation>
     </author>
-    <arxiv:comment>12 pages, 4 figures</arxiv:comment>
-    <arxiv:journal_ref>JMLR 27 (2026) 1-24</arxiv:journal_ref>
-    <arxiv:doi>10.1000/jmlr.2026.0001</arxiv:doi>
-    <link href="http://arxiv.org/abs/2409.01234v1" rel="alternate" type="text/html"/>
-    <link href="http://arxiv.org/pdf/2409.01234v1" rel="related" type="application/pdf" title="pdf"/>
-    <arxiv:primary_category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <author>
+      <name>Yu Shen</name>
+      <arxiv:affiliation>Key Laboratory of Road and Traffic Engineering of the Ministry of Education, Tongji University, Shanghai, China</arxiv:affiliation>
+    </author>
+    <author>
+      <name>Yuchuan Du</name>
+      <arxiv:affiliation>Key Laboratory of Road and Traffic Engineering of the Ministry of Education, Tongji University, Shanghai, China</arxiv:affiliation>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2012.13026v1</id>
+    <title>Rethink AI-based Power Grid Control: Diving Into Algorithm Design</title>
+    <updated>2020-12-23T23:38:41Z</updated>
+    <link href="https://arxiv.org/abs/2012.13026v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2012.13026v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Recently, deep reinforcement learning (DRL)-based approach has shown promisein solving complex decision and control problems in power engineering domain.In this paper, we present an in-depth analysis of DRL-based voltage control fromaspects of algorithm selection, state space representation, and reward engineering.To resolve observed issues, we propose a novel imitation learning-based approachto directly map power grid operating points to effective actions without any interimreinforcement learning process. The performance results demonstrate that theproposed approach has strong generalization ability with much less training time.The agent trained by imitation learning is effective and robust to solve voltagecontrol problem and outperforms the former RL agents.</summary>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-12-23T23:38:41Z</published>
+    <arxiv:comment>Accepted by 34th NeurIPS Ml4eng Workshop, 2020</arxiv:comment>
+    <arxiv:primary_category term="cs.AI"/>
+    <author>
+      <name>Xiren Zhou</name>
+    </author>
+    <author>
+      <name>Siqi Wang</name>
+    </author>
+    <author>
+      <name>Ruisheng Diao</name>
+    </author>
+    <author>
+      <name>Desong Bian</name>
+    </author>
+    <author>
+      <name>Jiahui Duan</name>
+    </author>
+    <author>
+      <name>Di Shi</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2012.13293v1</id>
+    <title>Fuzzy Commitments Offer Insufficient Protection to Biometric Templates Produced by Deep Learning</title>
+    <updated>2020-12-24T15:28:33Z</updated>
+    <link href="https://arxiv.org/abs/2012.13293v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2012.13293v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>In this work, we study the protection that fuzzy commitments offer when they are applied to facial images, processed by the state of the art deep learning facial recognition systems. We show that while these systems are capable of producing great accuracy, they produce templates of too little entropy. As a result, we present a reconstruction attack that takes a protected template, and reconstructs a facial image. The reconstructed facial images greatly resemble the original ones. In the simplest attack scenario, more than 78% of these reconstructed templates succeed in unlocking an account (when the system is configured to 0.1% FAR). Even in the "hardest" settings (in which we take a reconstructed image from one system and use it in a different system, with different feature extraction process) the reconstructed image offers 50 to 120 times higher success rates than the system's FAR.</summary>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-12-24T15:28:33Z</published>
+    <arxiv:primary_category term="cs.CR"/>
+    <author>
+      <name>Danny Keller</name>
+    </author>
+    <author>
+      <name>Margarita Osadchy</name>
+    </author>
+    <author>
+      <name>Orr Dunkelman</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2012.13315v1</id>
+    <title>Generalization in portfolio-based algorithm selection</title>
+    <updated>2020-12-24T16:33:17Z</updated>
+    <link href="https://arxiv.org/abs/2012.13315v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2012.13315v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Portfolio-based algorithm selection has seen tremendous practical success over the past two decades. This algorithm configuration procedure works by first selecting a portfolio of diverse algorithm parameter settings, and then, on a given problem instance, using an algorithm selector to choose a parameter setting from the portfolio with strong predicted performance. Oftentimes, both the portfolio and the algorithm selector are chosen using a training set of typical problem instances from the application domain at hand. In this paper, we provide the first provable guarantees for portfolio-based algorithm selection. We analyze how large the training set should be to ensure that the resulting algorithm selector's average performance over the training set is close to its future (expected) performance. This involves analyzing three key reasons why these two quantities may diverge: 1) the learning-theoretic complexity of the algorithm selector, 2) the size of the portfolio, and 3) the learning-theoretic complexity of the algorithm's performance as a function of its parameters. We introduce an end-to-end learning-theoretic analysis of the portfolio construction and algorithm selection together. We prove that if the portfolio is large, overfitting is inevitable, even with an extremely simple algorithm selector. With experiments, we illustrate a tradeoff exposed by our theoretical analysis: as we increase the portfolio size, we can hope to include a well-suited parameter setting for every possible problem instance, but it becomes impossible to avoid overfitting.</summary>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-12-24T16:33:17Z</published>
+    <arxiv:comment>AAAI 2021</arxiv:comment>
+    <arxiv:primary_category term="cs.AI"/>
+    <author>
+      <name>Maria-Florina Balcan</name>
+    </author>
+    <author>
+      <name>Tuomas Sandholm</name>
+    </author>
+    <author>
+      <name>Ellen Vitercik</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2012.13391v2</id>
+    <title>I like fish, especially dolphins: Addressing Contradictions in Dialogue Modeling</title>
+    <updated>2020-12-28T18:32:21Z</updated>
+    <link href="https://arxiv.org/abs/2012.13391v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2012.13391v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>To quantify how well natural language understanding models can capture consistency in a general conversation, we introduce the DialoguE COntradiction DEtection task (DECODE) and a new conversational dataset containing both human-human and human-bot contradictory dialogues. We then compare a structured utterance-based approach of using pre-trained Transformer models for contradiction detection with the typical unstructured approach. Results reveal that: (i) our newly collected dataset is notably more effective at providing supervision for the dialogue contradiction detection task than existing NLI data including those aimed to cover the dialogue domain; (ii) the structured utterance-based approach is more robust and transferable on both analysis and out-of-distribution dialogues than its unstructured counterpart. We also show that our best contradiction detection model correlates well with human judgments and further provide evidence for its usage in both automatically evaluating and improving the consistency of state-of-the-art generative chatbots.</summary>
     <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
     <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
-  </entry>
-
-  <entry>
-    <id>http://arxiv.org/abs/2409.05678v2</id>
-    <published>2026-09-08T16:40:00Z</published>
-    <updated>2026-09-11T08:22:31Z</updated>
-    <title>A Note on Vector Index Selection</title>
-    <summary>  Exact search remains competitive at small corpus sizes.</summary>
-    <author>
-      <name>Priya Nair</name>
-    </author>
-    <link href="http://arxiv.org/abs/2409.05678v2" rel="alternate" type="text/html"/>
-    <arxiv:primary_category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
     <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-12-24T18:47:49Z</published>
+    <arxiv:comment>15 pages</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Yixin Nie</name>
+    </author>
+    <author>
+      <name>Mary Williamson</name>
+    </author>
+    <author>
+      <name>Mohit Bansal</name>
+    </author>
+    <author>
+      <name>Douwe Kiela</name>
+    </author>
+    <author>
+      <name>Jason Weston</name>
+    </author>
   </entry>
-
   <entry>
-    <id>http://arxiv.org/abs/cond-mat/0211034v3</id>
-    <published>2002-11-15T12:00:00-05:00</published>
-    <updated>2026-09-10T07:00:00+00:00</updated>
-    <title>Thermal Conductivity in Disordered
-  Low-Dimensional Systems</title>
-    <summary>  We revisit transport in disordered chains and show that the
-conductivity follows a scaling law across three decades. The
-analysis uses a transfer-matrix method, and we compare against
-prior numerical work.
-</summary>
+    <id>http://arxiv.org/abs/2012.12447v1</id>
+    <title>Skeleton-based Approaches based on Machine Vision: A Survey</title>
+    <updated>2020-12-23T02:03:37Z</updated>
+    <link href="https://arxiv.org/abs/2012.12447v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2012.12447v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Recently, skeleton-based approaches have achieved rapid progress on the basis of great success in skeleton representation. Plenty of researches focus on solving specific problems according to skeleton features. Some skeleton-based approaches have been mentioned in several overviews on object detection as a non-essential part. Nevertheless, there has not been any thorough analysis of skeleton-based approaches attentively. Instead of describing these techniques in terms of theoretical constructs, we devote to summarizing skeleton-based approaches with regard to application fields and given tasks as comprehensively as possible. This paper is conducive to further understanding of skeleton-based application and dealing with particular issues.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-12-23T02:03:37Z</published>
+    <arxiv:comment>10 pages, 1 figures</arxiv:comment>
+    <arxiv:primary_category term="cs.CV"/>
     <author>
-      <name>Émile Durand</name>
+      <name>Jie Li</name>
     </author>
     <author>
-      <name>Wei Zhang</name>
+      <name>Binglin Li</name>
     </author>
     <author>
-      <name>Olusegun Adeyemi</name>
+      <name>Min Gao</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2012.12634v1</id>
+    <title>Overview of FPGA deep learning acceleration based on convolutional neural network</title>
+    <updated>2020-12-23T12:44:24Z</updated>
+    <link href="https://arxiv.org/abs/2012.12634v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2012.12634v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>In recent years, deep learning has become more and more mature, and as a commonly used algorithm in deep learning, convolutional neural networks have been widely used in various visual tasks. In the past, research based on deep learning algorithms mainly relied on hardware such as GPUs and CPUs. However, with the increasing development of FPGAs, both field programmable logic gate arrays, it has become the main implementation hardware platform that combines various neural network deep learning algorithms This article is a review article, which mainly introduces the related theories and algorithms of convolution. It summarizes the application scenarios of several existing FPGA technologies based on convolutional neural networks, and mainly introduces the application of accelerators. At the same time, it summarizes some accelerators' under-utilization of logic resources or under-utilization of memory bandwidth, so that they can't get the best performance.</summary>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-12-23T12:44:24Z</published>
+    <arxiv:primary_category term="cs.AI"/>
+    <author>
+      <name>Simin Liu</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2012.11903v1</id>
+    <title>Modelling Human Routines: Conceptualising Social Practice Theory for Agent-Based Simulation</title>
+    <updated>2020-12-22T10:06:47Z</updated>
+    <link href="https://arxiv.org/abs/2012.11903v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2012.11903v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Our routines play an important role in a wide range of social challenges such as climate change, disease outbreaks and coordinating staff and patients in a hospital. To use agent-based simulations (ABS) to understand the role of routines in social challenges we need an agent framework that integrates routines. This paper provides the domain-independent Social Practice Agent (SoPrA) framework that satisfies requirements from the literature to simulate our routines. By choosing the appropriate concepts from the literature on agent theory, social psychology and social practice theory we ensure SoPrA correctly depicts current evidence on routines. By creating a consistent, modular and parsimonious framework suitable for multiple domains we enhance the usability of SoPrA. SoPrA provides ABS researchers with a conceptual, formal and computational framework to simulate routines and gain new insights into social systems.</summary>
+    <category term="cs.MA" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-12-22T10:06:47Z</published>
+    <arxiv:primary_category term="cs.MA"/>
+    <author>
+      <name>Rijk Mercuur</name>
     </author>
     <author>
-      <name>Maria José Ferreira</name>
+      <name>Virginia Dignum</name>
     </author>
     <author>
-      <name>Jan Novák</name>
+      <name>Catholijn M. Jonker</name>
     </author>
-    <arxiv:comment>Revised version, typos fixed</arxiv:comment>
-    <link href="http://arxiv.org/abs/cond-mat/0211034v3" rel="alternate" type="text/html"/>
-    <arxiv:primary_category term="cond-mat.stat-mech" scheme="http://arxiv.org/schemas/atom"/>
-    <category term="cond-mat.stat-mech" scheme="http://arxiv.org/schemas/atom"/>
-    <category term="cond-mat.dis-nn" scheme="http://arxiv.org/schemas/atom"/>
-    <category term="physics.comp-ph" scheme="http://arxiv.org/schemas/atom"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2012.13569v1</id>
+    <title>Dynamic-K Recommendation with Personalized Decision Boundary</title>
+    <updated>2020-12-25T13:02:57Z</updated>
+    <link href="https://arxiv.org/abs/2012.13569v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2012.13569v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>In this paper, we investigate the recommendation task in the most common scenario with implicit feedback (e.g., clicks, purchases). State-of-the-art methods in this direction usually cast the problem as to learn a personalized ranking on a set of items (e.g., webpages, products). The top-N results are then provided to users as recommendations, where the N is usually a fixed number pre-defined by the system according to some heuristic criteria (e.g., page size, screen size). There is one major assumption underlying this fixed-number recommendation scheme, i.e., there are always sufficient relevant items to users' preferences. Unfortunately, this assumption may not always hold in real-world scenarios. In some applications, there might be very limited candidate items to recommend, and some users may have very high relevance requirement in recommendation. In this way, even the top-1 ranked item may not be relevant to a user's preference. Therefore, we argue that it is critical to provide a dynamic-K recommendation, where the K should be different with respect to the candidate item set and the target user. We formulate this dynamic-K recommendation task as a joint learning problem with both ranking and classification objectives. The ranking objective is the same as existing methods, i.e., to create a ranking list of items according to users' interests. The classification objective is unique in this work, which aims to learn a personalized decision boundary to differentiate the relevant items from irrelevant items. Based on these ideas, we extend two state-of-the-art ranking-based recommendation methods, i.e., BPRMF and HRM, to the corresponding dynamic-K versions, namely DK-BPRMF and DK-HRM. Our experimental results on two datasets show that the dynamic-K models are more effective than the original fixed-N recommendation methods.</summary>
+    <category term="cs.IR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-12-25T13:02:57Z</published>
+    <arxiv:comment>12 pages</arxiv:comment>
+    <arxiv:primary_category term="cs.IR"/>
+    <arxiv:journal_ref>CCIR 2017</arxiv:journal_ref>
+    <author>
+      <name>Yan Gao</name>
+    </author>
+    <author>
+      <name>Jiafeng Guo</name>
+    </author>
+    <author>
+      <name>Yanyan Lan</name>
+    </author>
+    <author>
+      <name>Huaming Liao</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2012.12718v1</id>
+    <title>Compliance Generation for Privacy Documents under GDPR: A Roadmap for Implementing Automation and Machine Learning</title>
+    <updated>2020-12-23T14:46:51Z</updated>
+    <link href="https://arxiv.org/abs/2012.12718v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2012.12718v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Most prominent research today addresses compliance with data protection laws through consumer-centric and public-regulatory approaches. We shift this perspective with the Privatech project to focus on corporations and law firms as agents of compliance. To comply with data protection laws, data processors must implement accountability measures to assess and document compliance in relation to both privacy documents and privacy practices. In this paper, we survey, on the one hand, current research on GDPR automation, and on the other hand, the operational challenges corporations face to comply with GDPR, and that may benefit from new forms of automation. We attempt to bridge the gap. We provide a roadmap for compliance assessment and generation by identifying compliance issues, breaking them down into tasks that can be addressed through machine learning and automation, and providing notes about related developments in the Privatech project.</summary>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-12-23T14:46:51Z</published>
+    <arxiv:comment>14 pages, The paper was presented at GDPR Compliance Theories, Techniques, Tools a Workshop of JURIX 2019. Universidad Politécnica de Madrid, Madrid, Spain, 11 December 2019</arxiv:comment>
+    <arxiv:primary_category term="cs.AI"/>
+    <author>
+      <name>David Restrepo Amariles</name>
+    </author>
+    <author>
+      <name>Aurore Clément Troussel</name>
+    </author>
+    <author>
+      <name>Rajaa El Hamdani</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2012.13666v1</id>
+    <title>PaXNet: Dental Caries Detection in Panoramic X-ray using Ensemble Transfer Learning and Capsule Classifier</title>
+    <updated>2020-12-26T03:00:35Z</updated>
+    <link href="https://arxiv.org/abs/2012.13666v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2012.13666v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Dental caries is one of the most chronic diseases involving the majority of the population during their lifetime. Caries lesions are typically diagnosed by radiologists relying only on their visual inspection to detect via dental x-rays. In many cases, dental caries is hard to identify using x-rays and can be misinterpreted as shadows due to different reasons such as low image quality. Hence, developing a decision support system for caries detection has been a topic of interest in recent years. Here, we propose an automatic diagnosis system to detect dental caries in Panoramic images for the first time, to the best of authors' knowledge. The proposed model benefits from various pretrained deep learning models through transfer learning to extract relevant features from x-rays and uses a capsule network to draw prediction results. On a dataset of 470 Panoramic images used for features extraction, including 240 labeled images for classification, our model achieved an accuracy score of 86.05\% on the test set. The obtained score demonstrates acceptable detection performance and an increase in caries detection speed, as long as the challenges of using Panoramic x-rays of real patients are taken into account. Among images with caries lesions in the test set, our model acquired recall scores of 69.44\% and 90.52\% for mild and severe ones, confirming the fact that severe caries spots are more straightforward to detect and efficient mild caries detection needs a more robust and larger dataset. Considering the novelty of current research study as using Panoramic images, this work is a step towards developing a fully automated efficient decision support system to assist domain experts.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-12-26T03:00:35Z</published>
+    <arxiv:comment>14 pages, 10 figures, 7 tables, 46 references</arxiv:comment>
+    <arxiv:primary_category term="cs.CV"/>
+    <author>
+      <name>Arman Haghanifar</name>
+    </author>
+    <author>
+      <name>Mahdiyar Molahasani Majdabadi</name>
+    </author>
+    <author>
+      <name>Seok-Bum Ko</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2012.13677v1</id>
+    <title>Toward Compact Data from Big Data</title>
+    <updated>2020-12-26T04:45:40Z</updated>
+    <link href="https://arxiv.org/abs/2012.13677v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2012.13677v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Bigdata is a dataset of which size is beyond the ability of handling a valuable raw material that can be refined and distilled into valuable specific insights. Compact data is a method that optimizes the big dataset that gives best assets without handling complex bigdata. The compact dataset contains the maximum knowledge patterns at fine grained level for effective and personalized utilization of bigdata systems without bigdata. The compact data method is a tailor-made design which depends on problem situations. Various compact data techniques have been demonstrated into various data-driven research area in the paper.</summary>
+    <category term="cs.DB" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.AP" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-12-26T04:45:40Z</published>
+    <arxiv:comment>This paper has been accepted in the 2020 IEEE-ICITIS Conference</arxiv:comment>
+    <arxiv:primary_category term="cs.DB"/>
+    <author>
+      <name> Song-Kyoo</name>
+      <arxiv:affiliation>Amang</arxiv:affiliation>
+    </author>
+    <author>
+      <name> Kim</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2012.13779v1</id>
+    <title>Towards sample-efficient episodic control with DAC-ML</title>
+    <updated>2020-12-26T16:38:08Z</updated>
+    <link href="https://arxiv.org/abs/2012.13779v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2012.13779v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The sample-inefficiency problem in Artificial Intelligence refers to the inability of current Deep Reinforcement Learning models to optimize action policies within a small number of episodes. Recent studies have tried to overcome this limitation by adding memory systems and architectural biases to improve learning speed, such as in Episodic Reinforcement Learning. However, despite achieving incremental improvements, their performance is still not comparable to how humans learn behavioral policies. In this paper, we capitalize on the design principles of the Distributed Adaptive Control (DAC) theory of mind and brain to build a novel cognitive architecture (DAC-ML) that, by incorporating a hippocampus-inspired sequential memory system, can rapidly converge to effective action policies that maximize reward acquisition in a challenging foraging task.</summary>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="q-bio.NC" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-12-26T16:38:08Z</published>
+    <arxiv:comment>8 pages, 3 figures</arxiv:comment>
+    <arxiv:primary_category term="cs.AI"/>
+    <author>
+      <name>Ismael T. Freire</name>
+    </author>
+    <author>
+      <name>Adrián F. Amil</name>
+    </author>
+    <author>
+      <name>Vasiliki Vouloutsi</name>
+    </author>
+    <author>
+      <name>Paul F. M. J. Verschure</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2012.14005v1</id>
+    <title>Neural document expansion for ad-hoc information retrieval</title>
+    <updated>2020-12-27T20:00:08Z</updated>
+    <link href="https://arxiv.org/abs/2012.14005v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2012.14005v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Recently, Nogueira et al. [2019] proposed a new approach to document expansion based on a neural Seq2Seq model, showing significant improvement on short text retrieval task. However, this approach needs a large amount of in-domain training data. In this paper, we show that this neural document expansion approach can be effectively adapted to standard IR tasks, where labels are scarce and many long documents are present.</summary>
+    <category term="cs.IR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-12-27T20:00:08Z</published>
+    <arxiv:primary_category term="cs.IR"/>
+    <author>
+      <name>Cheng Tang</name>
+    </author>
+    <author>
+      <name>Andrew Arnold</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1904.07934v2</id>
+    <title>Devil is in the Edges: Learning Semantic Boundaries from Noisy Annotations</title>
+    <updated>2019-06-09T17:30:52Z</updated>
+    <link href="https://arxiv.org/abs/1904.07934v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1904.07934v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We tackle the problem of semantic boundary prediction, which aims to identify pixels that belong to object(class) boundaries. We notice that relevant datasets consist of a significant level of label noise, reflecting the fact that precise annotations are laborious to get and thus annotators trade-off quality with efficiency. We aim to learn sharp and precise semantic boundaries by explicitly reasoning about annotation noise during training. We propose a simple new layer and loss that can be used with existing learning-based boundary detectors. Our layer/loss enforces the detector to predict a maximum response along the normal direction at an edge, while also regularizing its direction. We further reason about true object boundaries during training using a level set formulation, which allows the network to learn from misaligned labels in an end-to-end fashion. Experiments show that we improve over the CASENet backbone network by more than 4% in terms of MF(ODS) and 18.61% in terms of AP, outperforming all current state-of-the-art methods including those that deal with alignment. Furthermore, we show that our learned network can be used to significantly improve coarse segmentation labels, lending itself as an efficient way to label new data.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-04-16T19:16:57Z</published>
+    <arxiv:comment>Accepted as a CVPR 2019 oral paper (Project Page: https://nv-tlabs.github.io/STEAL/)</arxiv:comment>
+    <arxiv:primary_category term="cs.CV"/>
+    <arxiv:journal_ref>CVPR 2019</arxiv:journal_ref>
+    <author>
+      <name>David Acuna</name>
+    </author>
+    <author>
+      <name>Amlan Kar</name>
+    </author>
+    <author>
+      <name>Sanja Fidler</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1904.08010v1</id>
+    <title>How to define co-occurrence in different domains of study?</title>
+    <updated>2019-04-16T23:16:56Z</updated>
+    <link href="https://arxiv.org/abs/1904.08010v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1904.08010v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>This position paper presents a comparative study of co-occurrences. Some similarities and differences in the definition exist depending on the research domain (e.g. linguistics, NLP, computer science). This paper discusses these points, and deals with the methodological aspects in order to identify co-occurrences in a multidisciplinary paradigm.</summary>
+    <category term="cs.IR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.DB" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-04-16T23:16:56Z</published>
+    <arxiv:comment>CICLING'2018 (International Conference on Computational Linguistics and Intelligent Text Processing) - March 18 to 24, 2018 - Hanoi, Vietnam (not published in CICLING proceedings)</arxiv:comment>
+    <arxiv:primary_category term="cs.IR"/>
+    <author>
+      <name>Mathieu Roche</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1905.02810v1</id>
+    <title>Decision Making with Machine Learning and ROC Curves</title>
+    <updated>2019-05-05T08:01:23Z</updated>
+    <link href="https://arxiv.org/abs/1905.02810v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1905.02810v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The Receiver Operating Characteristic (ROC) curve is a representation of the statistical information discovered in binary classification problems and is a key concept in machine learning and data science. This paper studies the statistical properties of ROC curves and its implication on model selection. We analyze the implications of different models of incentive heterogeneity and information asymmetry on the relation between human decisions and the ROC curves. Our theoretical discussion is illustrated in the context of a large data set of pregnancy outcomes and doctor diagnosis from the Pre-Pregnancy Checkups of reproductive age couples in Henan Province provided by the Chinese Ministry of Health.</summary>
+    <category term="stat.ME" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="econ.GN" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-05-05T08:01:23Z</published>
+    <arxiv:primary_category term="stat.ME"/>
+    <author>
+      <name>Kai Feng</name>
+    </author>
+    <author>
+      <name>Han Hong</name>
+    </author>
+    <author>
+      <name>Ke Tang</name>
+    </author>
+    <author>
+      <name>Jingyuan Wang</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1905.02845v1</id>
+    <title>Feature Selection and Feature Extraction in Pattern Analysis: A Literature Review</title>
+    <updated>2019-05-07T23:41:34Z</updated>
+    <link href="https://arxiv.org/abs/1905.02845v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1905.02845v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Pattern analysis often requires a pre-processing stage for extracting or selecting features in order to help the classification, prediction, or clustering stage discriminate or represent the data in a better way. The reason for this requirement is that the raw data are complex and difficult to process without extracting or selecting appropriate features beforehand. This paper reviews theory and motivation of different common methods of feature selection and extraction and introduces some of their applications. Some numerical implementations are also shown for these methods. Finally, the methods in feature selection and extraction are compared.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-05-07T23:41:34Z</published>
+    <arxiv:comment>14 pages, 1 figure, 2 tables, survey (literature review) paper</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Benyamin Ghojogh</name>
+    </author>
+    <author>
+      <name>Maria N. Samad</name>
+    </author>
+    <author>
+      <name>Sayema Asif Mashhadi</name>
+    </author>
+    <author>
+      <name>Tania Kapoor</name>
+    </author>
+    <author>
+      <name>Wahab Ali</name>
+    </author>
+    <author>
+      <name>Fakhri Karray</name>
+    </author>
+    <author>
+      <name>Mark Crowley</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1905.01984v1</id>
+    <title>AI-Powered Text Generation for Harmonious Human-Machine Interaction: Current State and Future Directions</title>
+    <updated>2019-05-01T23:26:38Z</updated>
+    <link href="https://arxiv.org/abs/1905.01984v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1905.01984v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>In the last two decades, the landscape of text generation has undergone tremendous changes and is being reshaped by the success of deep learning. New technologies for text generation ranging from template-based methods to neural network-based methods emerged. Meanwhile, the research objectives have also changed from generating smooth and coherent sentences to infusing personalized traits to enrich the diversification of newly generated content. With the rapid development of text generation solutions, one comprehensive survey is urgent to summarize the achievements and track the state of the arts. In this survey paper, we present the general systematical framework, illustrate the widely utilized models and summarize the classic applications of text generation.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.HC" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-05-01T23:26:38Z</published>
+    <arxiv:comment>Accepted by IEEE UIC 2019</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Qiuyun Zhang</name>
+    </author>
+    <author>
+      <name>Bin Guo</name>
+    </author>
+    <author>
+      <name>Hao Wang</name>
+    </author>
+    <author>
+      <name>Yunji Liang</name>
+    </author>
+    <author>
+      <name>Shaoyang Hao</name>
+    </author>
+    <author>
+      <name>Zhiwen Yu</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1905.02019v1</id>
+    <title>Conditioning LSTM Decoder and Bi-directional Attention Based Question Answering System</title>
+    <updated>2019-05-02T01:07:20Z</updated>
+    <link href="https://arxiv.org/abs/1905.02019v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1905.02019v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Applying neural-networks on Question Answering has gained increasing popularity in recent years. In this paper, I implemented a model with Bi-directional attention flow layer, connected with a Multi-layer LSTM encoder, connected with one start-index decoder and one conditioning end-index decoder. I introduce a new end-index decoder layer, conditioning on start-index output. The Experiment shows this has increased model performance by 15.16%. For prediction, I proposed a new smart-span equation, rewarding both short answer length and high probability in start-index and end-index, which further improved the prediction accuracy. The best single model achieves an F1 score of 73.97% and EM score of 64.95% on test set.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-05-02T01:07:20Z</published>
+    <arxiv:comment>7 pages, 7 figures</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Heguang Liu</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1905.03362v1</id>
+    <title>2-bit Model Compression of Deep Convolutional Neural Network on ASIC Engine for Image Retrieval</title>
+    <updated>2019-05-08T21:48:42Z</updated>
+    <link href="https://arxiv.org/abs/1905.03362v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1905.03362v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Image retrieval utilizes image descriptors to retrieve the most similar images to a given query image. Convolutional neural network (CNN) is becoming the dominant approach to extract image descriptors for image retrieval. For low-power hardware implementation of image retrieval, the drawback of CNN-based feature descriptor is that it requires hundreds of megabytes of storage. To address this problem, this paper applies deep model quantization and compression to CNN in ASIC chip for image retrieval. It is demonstrated that the CNN-based features descriptor can be extracted using as few as 2-bit weights quantization to deliver a similar performance as floating-point model for image retrieval. In addition, to implement CNN in ASIC, especially for large scale images, the limited buffer size of chips should be considered. To retrieve large scale images, we propose an improved pooling strategy, region nested invariance pooling (RNIP), which uses cropped sub-images for CNN. Testing results on chip show that integrating RNIP with the proposed 2-bit CNN model compression approach is capable of retrieving large scale images.</summary>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-05-08T21:48:42Z</published>
+    <arxiv:primary_category term="cs.AI"/>
+    <author>
+      <name>Bin Yang</name>
+    </author>
+    <author>
+      <name>Lin Yang</name>
+    </author>
+    <author>
+      <name>Xiaochun Li</name>
+    </author>
+    <author>
+      <name>Wenhan Zhang</name>
+    </author>
+    <author>
+      <name>Hua Zhou</name>
+    </author>
+    <author>
+      <name>Yequn Zhang</name>
+    </author>
+    <author>
+      <name>Yongxiong Ren</name>
+    </author>
+    <author>
+      <name>Yinbo Shi</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1905.03427v1</id>
+    <title>Variable Neighborhood Search for the Bin Packing Problem with Compatible Categories</title>
+    <updated>2019-05-09T03:14:15Z</updated>
+    <link href="https://arxiv.org/abs/1905.03427v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1905.03427v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Bin Packing with Conflicts (BPC) are problems in which items with compatibility constraints must be packed in the least number of bins, not exceeding the capacity of the bins and ensuring that non-conflicting items are packed in each bin. In this work, we introduce the Bin Packing Problem with Compatible Categories (BPCC), a variant of the BPC in which items belong to conflicting or compatible categories, in opposition to the item-by-item incompatibility found in previous literature. It is a common problem in the context of last mile distribution to nanostores located in densely populated areas. To efficiently solve real-life sized instances of the problem, we propose a Variable Neighborhood Search (VNS) metaheuristic algorithm. Computational experiments suggest that the algorithm yields good solutions in very short times while compared to linear integer programming running on a high-performance computing environment.</summary>
+    <category term="cs.DS" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="math.OC" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-05-09T03:14:15Z</published>
+    <arxiv:comment>2018 SCALE Latin American Conference, Boston, USA, April 15th-16th, 2018</arxiv:comment>
+    <arxiv:primary_category term="cs.DS"/>
+    <author>
+      <name>Luiz F. O. Moura Santos</name>
+    </author>
+    <author>
+      <name>Hugo T. Y. Yoshizaki</name>
+    </author>
+    <author>
+      <name>Claudio B. Cunha</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1905.02941v1</id>
+    <title>Robust Federated Training via Collaborative Machine Teaching using Trusted Instances</title>
+    <updated>2019-05-08T07:27:04Z</updated>
+    <link href="https://arxiv.org/abs/1905.02941v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1905.02941v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Federated learning performs distributed model training using local data hosted by agents. It shares only model parameter updates for iterative aggregation at the server. Although it is privacy-preserving by design, federated learning is vulnerable to noise corruption of local agents, as demonstrated in the previous study on adversarial data poisoning threat against federated learning systems. Even a single noise-corrupted agent can bias the model training. In our work, we propose a collaborative and privacy-preserving machine teaching paradigm with multiple distributed teachers, to improve robustness of the federated training process against local data corruption. We assume that each local agent (teacher) have the resources to verify a small portions of trusted instances, which may not by itself be adequate for learning. In the proposed collaborative machine teaching method, these trusted instances guide the distributed agents to jointly select a compact while informative training subset from data hosted by their own. Simultaneously, the agents learn to add changes of limited magnitudes into the selected data instances, in order to improve the testing performances of the federally trained model despite of the training data corruption. Experiments on toy and real data demonstrate that our approach can identify training set bugs effectively and suggest appropriate changes to the labels. Our algorithm is a step toward trustworthy machine learning.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-05-08T07:27:04Z</published>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Yufei Han</name>
+    </author>
+    <author>
+      <name>Xiangliang Zhang</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1905.02234v2</id>
+    <title>Image Matters: Scalable Detection of Offensive and Non-Compliant Content / Logo in Product Images</title>
+    <updated>2019-08-02T07:38:26Z</updated>
+    <link href="https://arxiv.org/abs/1905.02234v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1905.02234v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>In e-commerce, product content, especially product images have a significant influence on a customer's journey from product discovery to evaluation and finally, purchase decision. Since many e-commerce retailers sell items from other third-party marketplace sellers besides their own, the content published by both internal and external content creators needs to be monitored and enriched, wherever possible. Despite guidelines and warnings, product listings that contain offensive and non-compliant images continue to enter catalogs. Offensive and non-compliant content can include a wide range of objects, logos, and banners conveying violent, sexually explicit, racist, or promotional messages. Such images can severely damage the customer experience, lead to legal issues, and erode the company brand. In this paper, we present a computer vision driven offensive and non-compliant image detection system for extremely large image datasets. This paper delves into the unique challenges of applying deep learning to real-world product image data from retail world. We demonstrate how we resolve a number of technical challenges such as lack of training data, severe class imbalance, fine-grained class definitions etc. using a number of practical yet unique technical strategies. Our system combines state-of-the-art image classification and object detection techniques with budgeted crowdsourcing to develop a solution customized for a massive, diverse, and constantly evolving product catalog.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-05-06T18:35:28Z</published>
+    <arxiv:comment>10 pages</arxiv:comment>
+    <arxiv:primary_category term="cs.CV"/>
+    <author>
+      <name>Shreyansh Gandhi</name>
+    </author>
+    <author>
+      <name>Samrat Kokkula</name>
+    </author>
+    <author>
+      <name>Abon Chaudhuri</name>
+    </author>
+    <author>
+      <name>Alessandro Magnani</name>
+    </author>
+    <author>
+      <name>Theban Stanley</name>
+    </author>
+    <author>
+      <name>Behzad Ahmadi</name>
+    </author>
+    <author>
+      <name>Venkatesh Kandaswamy</name>
+    </author>
+    <author>
+      <name>Omer Ovenc</name>
+    </author>
+    <author>
+      <name>Shie Mannor</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1904.12059v1</id>
+    <title>ARCHANGEL: Tamper-proofing Video Archives using Temporal Content Hashes on the Blockchain</title>
+    <updated>2019-04-26T21:59:02Z</updated>
+    <link href="https://arxiv.org/abs/1904.12059v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1904.12059v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We present ARCHANGEL; a novel distributed ledger based system for assuring the long-term integrity of digital video archives. First, we describe a novel deep network architecture for computing compact temporal content hashes (TCHs) from audio-visual streams with durations of minutes or hours. Our TCHs are sensitive to accidental or malicious content modification (tampering) but invariant to the codec used to encode the video. This is necessary due to the curatorial requirement for archives to format shift video over time to ensure future accessibility. Second, we describe how the TCHs (and the models used to derive them) are secured via a proof-of-authority blockchain distributed across multiple independent archives. We report on the efficacy of ARCHANGEL within the context of a trial deployment in which the national government archives of the United Kingdom, Estonia and Norway participated.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.DC" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-04-26T21:59:02Z</published>
+    <arxiv:comment>Accepted to CVPR Blockchain Workshop 2019</arxiv:comment>
+    <arxiv:primary_category term="cs.CV"/>
+    <author>
+      <name>Tu Bui</name>
+    </author>
+    <author>
+      <name>Daniel Cooper</name>
+    </author>
+    <author>
+      <name>John Collomosse</name>
+    </author>
+    <author>
+      <name>Mark Bell</name>
+    </author>
+    <author>
+      <name>Alex Green</name>
+    </author>
+    <author>
+      <name>John Sheridan</name>
+    </author>
+    <author>
+      <name>Jez Higgins</name>
+    </author>
+    <author>
+      <name>Arindra Das</name>
+    </author>
+    <author>
+      <name>Jared Keller</name>
+    </author>
+    <author>
+      <name>Olivier Thereaux</name>
+    </author>
+    <author>
+      <name>Alan Brown</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1904.13196v1</id>
+    <title>Semantic Referee: A Neural-Symbolic Framework for Enhancing Geospatial Semantic Segmentation</title>
+    <updated>2019-04-30T12:44:22Z</updated>
+    <link href="https://arxiv.org/abs/1904.13196v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1904.13196v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Understanding why machine learning algorithms may fail is usually the task of the human expert that uses domain knowledge and contextual information to discover systematic shortcomings in either the data or the algorithm. In this paper, we propose a semantic referee, which is able to extract qualitative features of the errors emerging from deep machine learning frameworks and suggest corrections. The semantic referee relies on ontological reasoning about spatial knowledge in order to characterize errors in terms of their spatial relations with the environment. Using semantics, the reasoner interacts with the learning algorithm as a supervisor. In this paper, the proposed method of the interaction between a neural network classifier and a semantic referee shows how to improve the performance of semantic segmentation for satellite imagery data.</summary>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.LO" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-04-30T12:44:22Z</published>
+    <arxiv:primary_category term="cs.AI"/>
+    <author>
+      <name>Marjan Alirezaie</name>
+    </author>
+    <author>
+      <name>Martin Längkvist</name>
+    </author>
+    <author>
+      <name>Michael Sioutis</name>
+    </author>
+    <author>
+      <name>Amy Loutfi</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1904.07601v3</id>
+    <title>Relation-Shape Convolutional Neural Network for Point Cloud Analysis</title>
+    <updated>2019-05-26T03:55:11Z</updated>
+    <link href="https://arxiv.org/abs/1904.07601v3" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1904.07601v3" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Point cloud analysis is very challenging, as the shape implied in irregular points is difficult to capture. In this paper, we propose RS-CNN, namely, Relation-Shape Convolutional Neural Network, which extends regular grid CNN to irregular configuration for point cloud analysis. The key to RS-CNN is learning from relation, i.e., the geometric topology constraint among points. Specifically, the convolutional weight for local point set is forced to learn a high-level relation expression from predefined geometric priors, between a sampled point from this point set and the others. In this way, an inductive local representation with explicit reasoning about the spatial layout of points can be obtained, which leads to much shape awareness and robustness. With this convolution as a basic operator, RS-CNN, a hierarchical architecture can be developed to achieve contextual shape-aware learning for point cloud analysis. Extensive experiments on challenging benchmarks across three tasks verify RS-CNN achieves the state of the arts.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.GR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.RO" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-04-16T11:28:51Z</published>
+    <arxiv:comment>Accepted to CVPR 2019 as an oral presentation. Project page at https://yochengliu.github.io/Relation-Shape-CNN</arxiv:comment>
+    <arxiv:primary_category term="cs.CV"/>
+    <author>
+      <name>Yongcheng Liu</name>
+    </author>
+    <author>
+      <name>Bin Fan</name>
+    </author>
+    <author>
+      <name>Shiming Xiang</name>
+    </author>
+    <author>
+      <name>Chunhong Pan</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1904.08109v1</id>
+    <title>Contextual Aware Joint Probability Model Towards Question Answering System</title>
+    <updated>2019-04-17T07:16:10Z</updated>
+    <link href="https://arxiv.org/abs/1904.08109v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1904.08109v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>In this paper, we address the question answering challenge with the SQuAD 2.0 dataset. We design a model architecture which leverages BERT's capability of context-aware word embeddings and BiDAF's context interactive exploration mechanism. By integrating these two state-of-the-art architectures, our system tries to extract the contextual word representation at word and character levels, for better comprehension of both question and context and their correlations. We also propose our original joint posterior probability predictor module and its associated loss functions. Our best model so far obtains F1 score of 75.842% and EM score of 72.24% on the test PCE leaderboad.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-04-17T07:16:10Z</published>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Liu Yang</name>
+    </author>
+    <author>
+      <name>Lijing Song</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1904.08149v2</id>
+    <title>Bayesian policy selection using active inference</title>
+    <updated>2019-04-25T14:28:32Z</updated>
+    <link href="https://arxiv.org/abs/1904.08149v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1904.08149v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Learning to take actions based on observations is a core requirement for artificial agents to be able to be successful and robust at their task. Reinforcement Learning (RL) is a well-known technique for learning such policies. However, current RL algorithms often have to deal with reward shaping, have difficulties generalizing to other environments and are most often sample inefficient. In this paper, we explore active inference and the free energy principle, a normative theory from neuroscience that explains how self-organizing biological systems operate by maintaining a model of the world and casting action selection as an inference problem. We apply this concept to a typical problem known to the RL community, the mountain car problem, and show how active inference encompasses both RL and learning from demonstrations.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.NE" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-04-17T09:18:07Z</published>
+    <arxiv:comment>ICLR 2019 Workshop on Structure &amp; priors in reinforcement learning</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Ozan Çatal</name>
+    </author>
+    <author>
+      <name>Johannes Nauta</name>
+    </author>
+    <author>
+      <name>Tim Verbelen</name>
+    </author>
+    <author>
+      <name>Pieter Simoens</name>
+    </author>
+    <author>
+      <name>Bart Dhoedt</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1904.08177v1</id>
+    <title>Downhole Track Detection via Multiscale Conditional Generative Adversarial Nets</title>
+    <updated>2019-04-17T10:50:37Z</updated>
+    <link href="https://arxiv.org/abs/1904.08177v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1904.08177v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Frequent mine disasters cause a large number of casualties and property losses. Autonomous driving is a fundamental measure for solving this problem, and track detection is one of the key technologies for computer vision to achieve downhole automatic driving. The track detection result based on the traditional convolutional neural network (CNN) algorithm lacks the detailed and unique description of the object and relies too much on visual postprocessing technology. Therefore, this paper proposes a track detection algorithm based on a multiscale conditional generative adversarial network (CGAN). The generator is decomposed into global and local parts using a multigranularity structure in the generator network. A multiscale shared convolution structure is adopted in the discriminator network to further supervise training the generator. Finally, the Monte Carlo search technique is introduced to search the intermediate state of the generator, and the result is sent to the discriminator for comparison. Compared with the existing work, our model achieved 82.43\% pixel accuracy and an average intersection-over-union (IOU) of 0.6218, and the detection of the track reached 95.01\% accuracy in the downhole roadway scene test set.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-04-17T10:50:37Z</published>
+    <arxiv:comment>arXiv admin note: text overlap with arXiv:1711.11585 by other authors</arxiv:comment>
+    <arxiv:primary_category term="cs.CV"/>
+    <author>
+      <name>Jia Li</name>
+    </author>
+    <author>
+      <name>Xing Wei</name>
+    </author>
+    <author>
+      <name>Guoqiang Yang</name>
+    </author>
+    <author>
+      <name>Xiao Sun</name>
+    </author>
+    <author>
+      <name>Changliang Li</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1904.12635v1</id>
+    <title>Exploration of Self-Propelling Droplets Using a Curiosity Driven Robotic Assistant</title>
+    <updated>2019-04-22T22:17:34Z</updated>
+    <link href="https://arxiv.org/abs/1904.12635v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1904.12635v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We describe a chemical robotic assistant equipped with a curiosity algorithm (CA) that can efficiently explore the state a complex chemical system can exhibit. The CA-robot is designed to explore formulations in an open-ended way with no explicit optimization target. By applying the CA-robot to the study of self-propelling multicomponent oil-in-water droplets, we are able to observe an order of magnitude more variety of droplet behaviours than possible with a random parameter search and given the same budget. We demonstrate that the CA-robot enabled the discovery of a sudden and highly specific response of droplets to slight temperature changes. Six modes of self-propelled droplets motion were identified and classified using a time-temperature phase diagram and probed using a variety of techniques including NMR. This work illustrates how target free search can significantly increase the rate of unpredictable observations leading to new discoveries with potential applications in formulation chemistry.</summary>
+    <category term="cond-mat.soft" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.RO" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-04-22T22:17:34Z</published>
+    <arxiv:primary_category term="cond-mat.soft"/>
+    <author>
+      <name>Jonathan Grizou</name>
+    </author>
+    <author>
+      <name>Laurie J. Points</name>
+    </author>
+    <author>
+      <name>Abhishek Sharma</name>
+    </author>
+    <author>
+      <name>Leroy Cronin</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1904.12848v6</id>
+    <title>Unsupervised Data Augmentation for Consistency Training</title>
+    <updated>2020-11-05T15:11:02Z</updated>
+    <link href="https://arxiv.org/abs/1904.12848v6" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1904.12848v6" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Semi-supervised learning lately has shown much promise in improving deep learning models when labeled data is scarce. Common among recent approaches is the use of consistency training on a large amount of unlabeled data to constrain model predictions to be invariant to input noise. In this work, we present a new perspective on how to effectively noise unlabeled examples and argue that the quality of noising, specifically those produced by advanced data augmentation methods, plays a crucial role in semi-supervised learning. By substituting simple noising operations with advanced data augmentation methods such as RandAugment and back-translation, our method brings substantial improvements across six language and three vision tasks under the same consistency training framework. On the IMDb text classification dataset, with only 20 labeled examples, our method achieves an error rate of 4.20, outperforming the state-of-the-art model trained on 25,000 labeled examples. On a standard semi-supervised learning benchmark, CIFAR-10, our method outperforms all previous approaches and achieves an error rate of 5.43 with only 250 examples. Our method also combines well with transfer learning, e.g., when finetuning from BERT, and yields improvements in high-data regime, such as ImageNet, whether when there is only 10% labeled data or when a full labeled set with 1.3M extra unlabeled examples is used. Code is available at https://github.com/google-research/uda.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-04-29T17:56:59Z</published>
+    <arxiv:comment>NeurIPS 2020</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Qizhe Xie</name>
+    </author>
+    <author>
+      <name>Zihang Dai</name>
+    </author>
+    <author>
+      <name>Eduard Hovy</name>
+    </author>
+    <author>
+      <name>Minh-Thang Luong</name>
+    </author>
+    <author>
+      <name>Quoc V. Le</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1904.12901v1</id>
+    <title>Challenges of Real-World Reinforcement Learning</title>
+    <updated>2019-04-29T18:40:15Z</updated>
+    <link href="https://arxiv.org/abs/1904.12901v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1904.12901v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Reinforcement learning (RL) has proven its worth in a series of artificial domains, and is beginning to show some successes in real-world scenarios. However, much of the research advances in RL are often hard to leverage in real-world systems due to a series of assumptions that are rarely satisfied in practice. We present a set of nine unique challenges that must be addressed to productionize RL to real world problems. For each of these challenges, we specify the exact meaning of the challenge, present some approaches from the literature, and specify some metrics for evaluating that challenge. An approach that addresses all nine challenges would be applicable to a large number of real world problems. We also present an example domain that has been modified to present these challenges as a testbed for practical RL research.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.RO" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-04-29T18:40:15Z</published>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Gabriel Dulac-Arnold</name>
+    </author>
+    <author>
+      <name>Daniel Mankowitz</name>
+    </author>
+    <author>
+      <name>Todd Hester</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1904.13333v1</id>
+    <title>Coevo: a collaborative design platform with artificial agents</title>
+    <updated>2019-04-30T15:55:34Z</updated>
+    <link href="https://arxiv.org/abs/1904.13333v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1904.13333v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We present Coevo, an online platform that allows both humans and artificial agents to design shapes that solve different tasks. Our goal is to explore common shared design tools that can be used by humans and artificial agents in a context of creation. This approach can provide a better knowledge transfer and interaction with artificial agents since a common language of design is defined. In this paper, we outline the main components of this platform and discuss the definition of a human-centered language to enhance human-AI collaboration in co-creation scenarios.</summary>
+    <category term="cs.HC" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.NE" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-04-30T15:55:34Z</published>
+    <arxiv:primary_category term="cs.HC"/>
+    <author>
+      <name>Gerard Serra</name>
+    </author>
+    <author>
+      <name>David Miralles</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.00805v1</id>
+    <title>GazeCorrection:Self-Guided Eye Manipulation in the wild using Self-Supervised Generative Adversarial Networks</title>
+    <updated>2019-06-03T13:43:01Z</updated>
+    <link href="https://arxiv.org/abs/1906.00805v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.00805v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Gaze correction aims to redirect the person's gaze into the camera by manipulating the eye region, and it can be considered as a specific image resynthesis problem. Gaze correction has a wide range of applications in real life, such as taking a picture with staring at the camera. In this paper, we propose a novel method that is based on the inpainting model to learn from the face image to fill in the missing eye regions with new contents representing corrected eye gaze. Moreover, our model does not require the training dataset labeled with the specific head pose and eye angle information, thus, the training data is easy to collect. To retain the identity information of the eye region in the original input, we propose a self-guided pretrained model to learn the angle-invariance feature. Experiments show our model achieves very compelling gaze-corrected results in the wild dataset which is collected from the website and will be introduced in details. Code is available at https://github.com/zhangqianhui/GazeCorrection.</summary>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-06-03T13:43:01Z</published>
+    <arxiv:primary_category term="cs.CV"/>
+    <author>
+      <name>Jichao Zhang</name>
+    </author>
+    <author>
+      <name>Meng Sun</name>
+    </author>
+    <author>
+      <name>Jingjing Chen</name>
+    </author>
+    <author>
+      <name>Hao Tang</name>
+    </author>
+    <author>
+      <name>Yan Yan</name>
+    </author>
+    <author>
+      <name>Xueying Qin</name>
+    </author>
+    <author>
+      <name>Nicu Sebe</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.00872v1</id>
+    <title>From Words to Sentences: A Progressive Learning Approach for Zero-resource Machine Translation with Visual Pivots</title>
+    <updated>2019-06-03T15:28:48Z</updated>
+    <link href="https://arxiv.org/abs/1906.00872v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.00872v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>The neural machine translation model has suffered from the lack of large-scale parallel corpora. In contrast, we humans can learn multi-lingual translations even without parallel texts by referring our languages to the external world. To mimic such human learning behavior, we employ images as pivots to enable zero-resource translation learning. However, a picture tells a thousand words, which makes multi-lingual sentences pivoted by the same image noisy as mutual translations and thus hinders the translation model learning. In this work, we propose a progressive learning approach for image-pivoted zero-resource machine translation. Since words are less diverse when grounded in the image, we first learn word-level translation with image pivots, and then progress to learn the sentence-level translation by utilizing the learned word translation to suppress noises in image-pivoted multi-lingual sentences. Experimental results on two widely used image-pivot translation datasets, IAPR-TC12 and Multi30k, show that the proposed approach significantly outperforms other state-of-the-art methods.</summary>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CV" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-06-03T15:28:48Z</published>
+    <arxiv:comment>Accepted by IJCAI 2019</arxiv:comment>
+    <arxiv:primary_category term="cs.CL"/>
+    <author>
+      <name>Shizhe Chen</name>
+    </author>
+    <author>
+      <name>Qin Jin</name>
+    </author>
+    <author>
+      <name>Jianlong Fu</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.01039v1</id>
+    <title>Neural networks grown and self-organized by noise</title>
+    <updated>2019-06-03T19:33:39Z</updated>
+    <link href="https://arxiv.org/abs/1906.01039v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.01039v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Living neural networks emerge through a process of growth and self-organization that begins with a single cell and results in a brain, an organized and functional computational device. Artificial neural networks, however, rely on human-designed, hand-programmed architectures for their remarkable performance. Can we develop artificial computational devices that can grow and self-organize without human intervention? In this paper, we propose a biologically inspired developmental algorithm that can 'grow' a functional, layered neural network from a single initial cell. The algorithm organizes inter-layer connections to construct a convolutional pooling layer, a key constituent of convolutional neural networks (CNN's). Our approach is inspired by the mechanisms employed by the early visual system to wire the retina to the lateral geniculate nucleus (LGN), days before animals open their eyes. The key ingredients for robust self-organization are an emergent spontaneous spatiotemporal activity wave in the first layer and a local learning rule in the second layer that 'learns' the underlying activity pattern in the first layer. The algorithm is adaptable to a wide-range of input-layer geometries, robust to malfunctioning units in the first layer, and so can be used to successfully grow and self-organize pooling architectures of different pool-sizes and shapes. The algorithm provides a primitive procedure for constructing layered neural networks through growth and self-organization. Broadly, our work shows that biologically inspired developmental algorithms can be applied to autonomously grow functional 'brains' in-silico.</summary>
+    <category term="cs.NE" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="nlin.AO" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="q-bio.NC" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-06-03T19:33:39Z</published>
+    <arxiv:comment>21 pages (including 11 pages of appendix)</arxiv:comment>
+    <arxiv:primary_category term="cs.NE"/>
+    <author>
+      <name>Guruprasad Raghavan</name>
+    </author>
+    <author>
+      <name>Matt Thomson</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.01119v1</id>
+    <title>Analysis and Improvement of Adversarial Training in DQN Agents With Adversarially-Guided Exploration (AGE)</title>
+    <updated>2019-06-03T23:31:25Z</updated>
+    <link href="https://arxiv.org/abs/1906.01119v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.01119v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>This paper investigates the effectiveness of adversarial training in enhancing the robustness of Deep Q-Network (DQN) policies to state-space perturbations. We first present a formal analysis of adversarial training in DQN agents and its performance with respect to the proportion of adversarial perturbations to nominal observations used for training. Next, we consider the sample-inefficiency of current adversarial training techniques, and propose a novel Adversarially-Guided Exploration (AGE) mechanism based on a modified hybrid of the $ε$-greedy algorithm and Boltzmann exploration. We verify the feasibility of this exploration mechanism through experimental evaluation of its performance in comparison with the traditional decaying $ε$-greedy and parameter-space noise exploration algorithms.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-06-03T23:31:25Z</published>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Vahid Behzadan</name>
+    </author>
+    <author>
+      <name>William Hsu</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.01121v1</id>
+    <title>Adversarial Exploitation of Policy Imitation</title>
+    <updated>2019-06-03T23:38:33Z</updated>
+    <link href="https://arxiv.org/abs/1906.01121v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.01121v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>This paper investigates a class of attacks targeting the confidentiality aspect of security in Deep Reinforcement Learning (DRL) policies. Recent research have established the vulnerability of supervised machine learning models (e.g., classifiers) to model extraction attacks. Such attacks leverage the loosely-restricted ability of the attacker to iteratively query the model for labels, thereby allowing for the forging of a labeled dataset which can be used to train a replica of the original model. In this work, we demonstrate the feasibility of exploiting imitation learning techniques in launching model extraction attacks on DRL agents. Furthermore, we develop proof-of-concept attacks that leverage such techniques for black-box attacks against the integrity of DRL policies. We also present a discussion on potential solution concepts for mitigation techniques.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-06-03T23:38:33Z</published>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Vahid Behzadan</name>
+    </author>
+    <author>
+      <name>William Hsu</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.01126v1</id>
+    <title>Sequential Triggers for Watermarking of Deep Reinforcement Learning Policies</title>
+    <updated>2019-06-03T23:42:44Z</updated>
+    <link href="https://arxiv.org/abs/1906.01126v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.01126v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>This paper proposes a novel scheme for the watermarking of Deep Reinforcement Learning (DRL) policies. This scheme provides a mechanism for the integration of a unique identifier within the policy in the form of its response to a designated sequence of state transitions, while incurring minimal impact on the nominal performance of the policy. The applications of this watermarking scheme include detection of unauthorized replications of proprietary policies, as well as enabling the graceful interruption or termination of DRL activities by authorized entities. We demonstrate the feasibility of our proposal via experimental evaluation of watermarking a DQN policy trained in the Cartpole environment.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-06-03T23:42:44Z</published>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Vahid Behzadan</name>
+    </author>
+    <author>
+      <name>William Hsu</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.01350v2</id>
+    <title>Rapidly-Exploring Quotient-Space Trees: Motion Planning using Sequential Simplifications</title>
+    <updated>2019-08-24T16:40:10Z</updated>
+    <link href="https://arxiv.org/abs/1906.01350v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.01350v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Motion planning problems can be simplified by admissible projections of the configuration space to sequences of lower-dimensional quotient-spaces, called sequential simplifications. To exploit sequential simplifications, we present the Quotient-space Rapidly-exploring Random Trees (QRRT) algorithm. QRRT takes as input a start and a goal configuration, and a sequence of quotient-spaces. The algorithm grows trees on the quotient-spaces both sequentially and simultaneously to guarantee a dense coverage. QRRT is shown to be (1) probabilistically complete, and (2) can reduce the runtime by at least one order of magnitude. However, we show in experiments that the runtime varies substantially between different quotient-space sequences. To find out why, we perform an additional experiment, showing that the more narrow an environment, the more a quotient-space sequence can reduce runtime.</summary>
+    <category term="cs.RO" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-06-04T11:23:38Z</published>
+    <arxiv:comment>The International Symposium on Robotics Research (ISRR) 2019</arxiv:comment>
+    <arxiv:primary_category term="cs.RO"/>
+    <author>
+      <name>Andreas Orthey</name>
+    </author>
+    <author>
+      <name>Marc Toussaint</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.01374v1</id>
+    <title>Autonomous Reinforcement Learning of Multiple Interrelated Tasks</title>
+    <updated>2019-06-04T12:30:04Z</updated>
+    <link href="https://arxiv.org/abs/1906.01374v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.01374v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Autonomous multiple tasks learning is a fundamental capability to develop versatile artificial agents that can act in complex environments. In real-world scenarios, tasks may be interrelated (or "hierarchical") so that a robot has to first learn to achieve some of them to set the preconditions for learning other ones. Even though different strategies have been used in robotics to tackle the acquisition of interrelated tasks, in particular within the developmental robotics framework, autonomous learning in this kind of scenarios is still an open question. Building on previous research in the framework of intrinsically motivated open-ended learning, in this work we describe how this question can be addressed working on the level of task selection, in particular considering the multiple interrelated tasks scenario as an MDP where the system is trying to maximise its competence over all the tasks.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-06-04T12:30:04Z</published>
+    <arxiv:comment>Accepted to "The 9th Joint IEEE International Conference on Development and Learning and on Epigenetic Robotics" (ICDL-EpiRob2019). arXiv admin note: substantial text overlap with arXiv:1905.02690</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Vieri Giuliano Santucci</name>
+    </author>
+    <author>
+      <name>Gianluca Baldassarre</name>
+    </author>
+    <author>
+      <name>Emilio Cartoni</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.00744v5</id>
+    <title>Hierarchical Decision Making by Generating and Following Natural Language Instructions</title>
+    <updated>2019-10-02T16:10:21Z</updated>
+    <link href="https://arxiv.org/abs/1906.00744v5" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.00744v5" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We explore using latent natural language instructions as an expressive and compositional representation of complex actions for hierarchical decision making. Rather than directly selecting micro-actions, our agent first generates a latent plan in natural language, which is then executed by a separate model. We introduce a challenging real-time strategy game environment in which the actions of a large number of units must be coordinated across long time scales. We gather a dataset of 76 thousand pairs of instructions and executions from human play, and train instructor and executor models. Experiments show that models using natural language as a latent variable significantly outperform models that directly imitate human actions. The compositional structure of language proves crucial to its effectiveness for action representation. We also release our code, models and data.</summary>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.CL" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-06-03T12:28:50Z</published>
+    <arxiv:primary_category term="cs.AI"/>
+    <author>
+      <name>Hengyuan Hu</name>
+    </author>
+    <author>
+      <name>Denis Yarats</name>
+    </author>
+    <author>
+      <name>Qucheng Gong</name>
+    </author>
+    <author>
+      <name>Yuandong Tian</name>
+    </author>
+    <author>
+      <name>Mike Lewis</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.01407v1</id>
+    <title>RL4health: Crowdsourcing Reinforcement Learning for Knee Replacement Pathway Optimization</title>
+    <updated>2019-05-24T22:12:02Z</updated>
+    <link href="https://arxiv.org/abs/1906.01407v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.01407v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Joint replacement is the most common inpatient surgical treatment in the US. We investigate the clinical pathway optimization for knee replacement, which is a sequential decision process from onset to recovery. Based on episodic claims from previous cases, we view the pathway optimization as an intelligence crowdsourcing problem and learn the optimal decision policy from data by imitating the best expert at every intermediate state. We develop a reinforcement learning-based pipeline that uses value iteration, state compression and aggregation learning, kernel representation and cross validation to predict the best treatment policy. It also provides forecast of the clinical pathway under the optimized policy. Empirical validation shows that the optimized policy reduces the overall cost by 7 percent and reduces the excessive cost premium by 33 percent.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-05-24T22:12:02Z</published>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Hao Lu</name>
+    </author>
+    <author>
+      <name>Mengdi Wang</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.01432v1</id>
+    <title>Knowledge-augmented Column Networks: Guiding Deep Learning with Advice</title>
+    <updated>2019-05-31T21:09:21Z</updated>
+    <link href="https://arxiv.org/abs/1906.01432v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.01432v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Recently, deep models have had considerable success in several tasks, especially with low-level representations. However, effective learning from sparse noisy samples is a major challenge in most deep models, especially in domains with structured representations. Inspired by the proven success of human guided machine learning, we propose Knowledge-augmented Column Networks, a relational deep learning framework that leverages human advice/knowledge to learn better models in presence of sparsity and systematic noise.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-05-31T21:09:21Z</published>
+    <arxiv:comment>Presented at 2019 ICML Workshop on Human in the Loop Learning (HILL 2019), Long Beach, USA. arXiv admin note: substantial text overlap with arXiv:1904.06950</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Mayukh Das</name>
+    </author>
+    <author>
+      <name>Devendra Singh Dhami</name>
+    </author>
+    <author>
+      <name>Yang Yu</name>
+    </author>
+    <author>
+      <name>Gautam Kunapuli</name>
+    </author>
+    <author>
+      <name>Sriraam Natarajan</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.01470v3</id>
+    <title>Options as responses: Grounding behavioural hierarchies in multi-agent RL</title>
+    <updated>2020-07-10T13:31:16Z</updated>
+    <link href="https://arxiv.org/abs/1906.01470v3" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.01470v3" rel="related" type="application/pdf" title="pdf"/>
+    <summary>This paper investigates generalisation in multi-agent games, where the generality of the agent can be evaluated by playing against opponents it hasn't seen during training. We propose two new games with concealed information and complex, non-transitive reward structure (think rock/paper/scissors). It turns out that most current deep reinforcement learning methods fail to efficiently explore the strategy space, thus learning policies that generalise poorly to unseen opponents. We then propose a novel hierarchical agent architecture, where the hierarchy is grounded in the game-theoretic structure of the game -- the top level chooses strategic responses to opponents, while the low level implements them into policy over primitive actions. This grounding facilitates credit assignment across the levels of hierarchy. Our experiments show that the proposed hierarchical agent is capable of generalisation to unseen opponents, while conventional baselines fail to generalise whatsoever.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.MA" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.NE" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-06-04T14:18:47Z</published>
+    <arxiv:comment>First two authors contributed equally</arxiv:comment>
+    <arxiv:primary_category term="cs.LG"/>
+    <arxiv:journal_ref>International Conference on Machine Learning 2020</arxiv:journal_ref>
+    <author>
+      <name>Alexander Sasha Vezhnevets</name>
+    </author>
+    <author>
+      <name>Yuhuai Wu</name>
+    </author>
+    <author>
+      <name>Remi Leblond</name>
+    </author>
+    <author>
+      <name>Joel Z. Leibo</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.01504v1</id>
+    <title>Embedded hyper-parameter tuning by Simulated Annealing</title>
+    <updated>2019-06-04T15:14:36Z</updated>
+    <link href="https://arxiv.org/abs/1906.01504v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.01504v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>We propose a new metaheuristic training scheme that combines Stochastic Gradient Descent (SGD) and Discrete Optimization in an unconventional way. Our idea is to define a discrete neighborhood of the current SGD point containing a number of "potentially good moves" that exploit gradient information, and to search this neighborhood by using a classical metaheuristic scheme borrowed from Discrete Optimization.
+  In the present paper we investigate the use of a simple Simulated Annealing (SA) metaheuristic that accepts/rejects a candidate new solution in the neighborhood with a probability that depends both on the new solution quality and on a parameter (the temperature) which is modified over time to lower the probability of accepting worsening moves. We use this scheme as an automatic way to perform hyper-parameter tuning, hence the title of the paper. A distinctive feature of our scheme is that hyper-parameters are modified within a single SGD execution (and not in an external loop, as customary) and evaluated on the fly on the current minibatch, i.e., their tuning is fully embedded within the SGD algorithm.
+  The use of SA for training is not new, but previous proposals were mainly intended for non-differentiable objective functions for which SGD is not applied due to the lack of gradients. On the contrary, our SA method requires differentiability of (a proxy of) the loss function, and leverages on the availability of a gradient direction to define local moves that have a large probability to improve the current solution.
+  Computational results on image classification (CIFAR-10) are reported, showing that the proposed approach leads to an improvement of the final validation accuracy for modern Deep Neural Networks such as ResNet34 and VGG16.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.DM" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="math.OC" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-06-04T15:14:36Z</published>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Matteo Fischetti</name>
+    </author>
+    <author>
+      <name>Matteo Stringher</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/1906.01562v2</id>
+    <title>Privacy-preserving Crowd-guided AI Decision-making in Ethical Dilemmas</title>
+    <updated>2019-09-27T13:22:08Z</updated>
+    <link href="https://arxiv.org/abs/1906.01562v2" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/1906.01562v2" rel="related" type="application/pdf" title="pdf"/>
+    <summary>With the rapid development of artificial intelligence (AI), ethical issues surrounding AI have attracted increasing attention. In particular, autonomous vehicles may face moral dilemmas in accident scenarios, such as staying the course resulting in hurting pedestrians or swerving leading to hurting passengers. To investigate such ethical dilemmas, recent studies have adopted preference aggregation, in which each voter expresses her/his preferences over decisions for the possible ethical dilemma scenarios, and a centralized system aggregates these preferences to obtain the winning decision. Although a useful methodology for building ethical AI systems, such an approach can potentially violate the privacy of voters since moral preferences are sensitive information and their disclosure can be exploited by malicious parties. In this paper, we report a first-of-its-kind privacy-preserving crowd-guided AI decision-making approach in ethical dilemmas. We adopt the notion of differential privacy to quantify privacy and consider four granularities of privacy protection by taking voter-/record-level privacy protection and centralized/distributed perturbation into account, resulting in four approaches VLCP, RLCP, VLDP, and RLDP. Moreover, we propose different algorithms to achieve these privacy protection granularities, while retaining the accuracy of the learned moral preference model. Specifically, VLCP and RLCP are implemented with the data aggregator setting a universal privacy parameter and perturbing the averaged moral preference to protect the privacy of voters' data. VLDP and RLDP are implemented in such a way that each voter perturbs her/his local moral preference with a personalized privacy parameter. Extensive experiments on both synthetic and real data demonstrate that the proposed approach can achieve high accuracy of preference aggregation while protecting individual voter's privacy.</summary>
+    <category term="cs.CR" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2019-06-04T16:27:47Z</published>
+    <arxiv:comment>This paper has been published as a full paper in ACM International Conference on Information and Knowledge Management (CIKM) 2019, held in November 3-7, 2019, Beijing, China</arxiv:comment>
+    <arxiv:primary_category term="cs.CR"/>
+    <author>
+      <name>Teng Wang</name>
+    </author>
+    <author>
+      <name>Jun Zhao</name>
+    </author>
+    <author>
+      <name>Han Yu</name>
+    </author>
+    <author>
+      <name>Jinyan Liu</name>
+    </author>
+    <author>
+      <name>Xinyu Yang</name>
+    </author>
+    <author>
+      <name>Xuebin Ren</name>
+    </author>
+    <author>
+      <name>Shuyu Shi</name>
+    </author>
+    <arxiv:doi>10.1145/3357384.3357954</arxiv:doi>
+    <link rel="related" href="https://doi.org/10.1145/3357384.3357954" title="doi"/>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2005.14621v1</id>
+    <title>Fair Classification via Unconstrained Optimization</title>
+    <updated>2020-05-21T11:29:05Z</updated>
+    <link href="https://arxiv.org/abs/2005.14621v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2005.14621v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Achieving the Bayes optimal binary classification rule subject to group fairness constraints is known to be reducible, in some cases, to learning a group-wise thresholding rule over the Bayes regressor. In this paper, we extend this result by proving that, in a broader setting, the Bayes optimal fair learning rule remains a group-wise thresholding rule over the Bayes regressor but with a (possible) randomization at the thresholds. This provides a stronger justification to the post-processing approach in fair classification, in which (1) a predictor is learned first, after which (2) its output is adjusted to remove bias. We show how the post-processing rule in this two-stage approach can be learned quite efficiently by solving an unconstrained optimization problem. The proposed algorithm can be applied to any black-box machine learning model, such as deep neural networks, random forests and support vector machines. In addition, it can accommodate many fairness criteria that have been previously proposed in the literature, such as equalized odds and statistical parity. We prove that the algorithm is Bayes consistent and motivate it, furthermore, via an impossibility result that quantifies the tradeoff between accuracy and fairness across multiple demographic groups. Finally, we conclude by validating the algorithm on the Adult benchmark dataset.</summary>
+    <category term="cs.LG" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.AP" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="stat.ML" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-05-21T11:29:05Z</published>
+    <arxiv:primary_category term="cs.LG"/>
+    <author>
+      <name>Ibrahim Alabdulmohsin</name>
+    </author>
+  </entry>
+  <entry>
+    <id>http://arxiv.org/abs/2005.14156v1</id>
+    <title>Unlucky Explorer: A Complete non-Overlapping Map Exploration</title>
+    <updated>2020-05-28T17:19:24Z</updated>
+    <link href="https://arxiv.org/abs/2005.14156v1" rel="alternate" type="text/html"/>
+    <link href="https://arxiv.org/pdf/2005.14156v1" rel="related" type="application/pdf" title="pdf"/>
+    <summary>Nowadays, the field of Artificial Intelligence in Computer Games (AI in Games) is going to be more alluring since computer games challenge many aspects of AI with a wide range of problems, particularly general problems. One of these kinds of problems is Exploration, which states that an unknown environment must be explored by one or several agents. In this work, we have first introduced the Maze Dash puzzle as an exploration problem where the agent must find a Hamiltonian Path visiting all the cells. Then, we have investigated to find suitable methods by a focus on Monte-Carlo Tree Search (MCTS) and SAT to solve this puzzle quickly and accurately. An optimization has been applied to the proposed MCTS algorithm to obtain a promising result. Also, since the prefabricated test cases of this puzzle are not large enough to assay the proposed method, we have proposed and employed a technique to generate solvable test cases to evaluate the approaches. Eventually, the MCTS-based method has been assessed by the auto-generated test cases and compared with our implemented SAT approach that is considered a good rival. Our comparison indicates that the MCTS-based approach is an up-and-coming method that could cope with the test cases with small and medium sizes with faster run-time compared to SAT. However, for certain discussed reasons, including the features of the problem, tree search organization, and also the approach of MCTS in the Simulation step, MCTS takes more time to execute in Large size scenarios. Consequently, we have found the bottleneck for the MCTS-based method in significant test cases that could be improved in two real-world problems.</summary>
+    <category term="cs.AI" scheme="http://arxiv.org/schemas/atom"/>
+    <category term="cs.RO" scheme="http://arxiv.org/schemas/atom"/>
+    <published>2020-05-28T17:19:24Z</published>
+    <arxiv:primary_category term="cs.AI"/>
+    <author>
+      <name>Mohammad Sina Kiarostami</name>
+    </author>
+    <author>
+      <name>Saleh Khalaj Monfared</name>
+    </author>
+    <author>
+      <name>Mohammadreza Daneshvaramoli</name>
+    </author>
+    <author>
+      <name>Ali Oliayi</name>
+    </author>
+    <author>
+      <name>Negar Yousefian</name>
+    </author>
+    <author>
+      <name>Dara Rahmati</name>
+    </author>
+    <author>
+      <name>Saeid Gorgin</name>
+    </author>
   </entry>
 </feed>
