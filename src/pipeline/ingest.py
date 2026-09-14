@@ -74,7 +74,7 @@ def run_ingest(
             # without its vector (PRD §6.1).
             with session_factory() as session:
                 result = upsert_papers(session, page.papers)
-                embedded = refresh_embeddings(session, result.changed_paper_ids, embedder)
+                embedded = refresh_embeddings(session, result.all_paper_ids, embedder)
                 session.commit()
 
             report.pages_fetched += 1

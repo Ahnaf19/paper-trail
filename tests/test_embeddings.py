@@ -112,3 +112,20 @@ def test_no_papers_is_a_no_op(session):
     embedder = FakeEmbedder()
     assert refresh_embeddings(session, [], embedder) == 0
     assert embedder.calls == []
+
+
+def test_a_stored_paper_with_no_vector_gets_backfilled(session):
+    """🔴 The gap: papers ingested before embeddings existed are 'unchanged' forever.
+
+    A re-run reports nothing changed, so if only changed papers were offered for
+    embedding these rows would never get a vector at all.
+    """
+    papers = [make_paper("2409.00001"), make_paper("2409.00002")]
+    seed(session, papers)  # ingested, never embedded
+
+    unchanged = upsert_papers(session, papers)
+    session.commit()
+    assert unchanged.changed_paper_ids == [], "precondition: nothing changed"
+
+    embedder = FakeEmbedder()
+    assert refresh_embeddings(session, unchanged.all_paper_ids, embedder) == 2

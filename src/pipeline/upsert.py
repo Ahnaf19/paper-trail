@@ -16,8 +16,12 @@ class UpsertResult:
     inserted: int = 0
     updated: int = 0
     unchanged: int = 0
-    # Papers whose content moved, so M4 knows exactly what to re-embed.
+    # Papers whose content moved -- what the report counts as updated.
     changed_paper_ids: list[int] = field(default_factory=list)
+    # EVERY paper on the page. Embedding works from this, not from changed_paper_ids:
+    # a paper stored before embeddings existed is "unchanged" on every future run and
+    # would otherwise never get a vector.
+    all_paper_ids: list[int] = field(default_factory=list)
 
     def __add__(self, other: "UpsertResult") -> "UpsertResult":
         return UpsertResult(
@@ -25,6 +29,7 @@ class UpsertResult:
             self.updated + other.updated,
             self.unchanged + other.unchanged,
             self.changed_paper_ids + other.changed_paper_ids,
+            self.all_paper_ids + other.all_paper_ids,
         )
 
 
@@ -93,6 +98,9 @@ def upsert_papers(session: Session, papers: list[ArxivPaper]) -> UpsertResult:
     ).all()
 
     changed_ids = {arxiv_id: pk for pk, arxiv_id in changed}
+    all_ids = dict(
+        session.execute(select(Paper.arxiv_id, Paper.id).where(Paper.arxiv_id.in_(incoming))).all()
+    )
     by_id = {p.arxiv_id: p for p in papers if p.arxiv_id in changed_ids}
     _replace_links(session, changed_ids, by_id)
 
@@ -102,6 +110,7 @@ def upsert_papers(session: Session, papers: list[ArxivPaper]) -> UpsertResult:
         updated=len(changed_ids) - inserted,
         unchanged=len(papers) - len(changed_ids),
         changed_paper_ids=list(changed_ids.values()),
+        all_paper_ids=list(all_ids.values()),
     )
 
 
