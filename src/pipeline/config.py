@@ -47,6 +47,14 @@ class Settings(BaseSettings):
     retrieval_top_k: int = Field(default=5, ge=1, le=20)
     relevance_threshold: float = Field(default=0.73, ge=0.0, le=1.0)
     max_question_chars: int = Field(default=1000, ge=1)
+    max_context_chars: int = Field(default=12000, ge=1000)  # ~3k tokens, well inside any model
+
+    # LLM (PRD §6.3). Any OpenAI-compatible endpoint; Groq by default because it is free.
+    # gpt-oss-20b is a *production* Groq model on 15 Sep 2026 -- the llama ids are Enterprise.
+    llm_base_url: str = "https://api.groq.com/openai/v1"
+    llm_model: str = "openai/gpt-oss-20b"
+    llm_api_key: str | None = None  # absent => /ask degrades to retrieval + sources
+    llm_timeout_seconds: float = Field(default=30.0, gt=0)
 
     @property
     def sync_database_url(self) -> str:
