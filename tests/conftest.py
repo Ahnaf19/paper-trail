@@ -25,6 +25,7 @@ from sqlalchemy.pool import NullPool
 from pipeline.api.app import app
 from pipeline.config import settings
 from pipeline.db import get_session
+from tests.helpers import KeywordEmbedder, StubLLM
 
 TEST_DB = "pipeline_test"
 TABLES = "paper, author, category, paper_author, paper_category, embedding, ingest_state"
@@ -67,7 +68,17 @@ def session(test_engine) -> Session:
 
 
 @pytest.fixture
-def client(test_engine, request):
+def stub_llm():
+    return StubLLM()
+
+
+@pytest.fixture
+def fake_embedder():
+    return KeywordEmbedder()
+
+
+@pytest.fixture
+def client(test_engine, request, fake_embedder, stub_llm):
     """The API, pointed at the test database.
 
     NullPool because each TestClient runs the app in its own event loop: a pooled asyncpg
@@ -86,7 +97,14 @@ def client(test_engine, request):
         async with factory() as api_session:
             yield api_session
 
+    # Set before TestClient starts: the lifespan only builds these if they are absent, so
+    # the suite never downloads an embedding model or reaches an LLM (NFR-4).
+    app.state.embedder = fake_embedder
+    app.state.llm = stub_llm
+
     app.dependency_overrides[get_session] = override_get_session
     with TestClient(app) as test_client:
         yield test_client
     app.dependency_overrides.clear()
+    app.state.embedder = None
+    app.state.llm = None
