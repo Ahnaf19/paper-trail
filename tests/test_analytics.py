@@ -4,6 +4,8 @@ from datetime import UTC, datetime
 
 import pytest
 
+from pipeline.api.app import app
+from pipeline.db import get_session
 from pipeline.upsert import upsert_papers
 from tests.helpers import make_paper
 
@@ -133,3 +135,18 @@ def test_n_limits_the_rows(client, corpus):
 def test_n_is_bounded(client, n):
     """Unbounded top-N is a free denial-of-service, so the bounds are part of the contract."""
     assert client.get(f"/stats/top-categories?n={n}").status_code == 422
+
+
+def test_a_database_failure_is_a_clean_503(client):
+    """A refused connection surfaces as a bare OSError, which 500s and leaks driver text."""
+
+    async def broken_session():
+        raise OSError("Connect call failed ('127.0.0.1', 5432)")
+        yield
+
+    app.dependency_overrides[get_session] = broken_session
+    response = client.get("/stats/top-categories")
+
+    assert response.status_code == 503
+    assert response.json() == {"detail": "database unavailable"}
+    assert "127.0.0.1" not in response.text

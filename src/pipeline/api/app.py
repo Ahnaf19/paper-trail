@@ -2,7 +2,8 @@
 
 from typing import Annotated
 
-from fastapi import Depends, FastAPI, HTTPException, status
+from fastapi import Depends, FastAPI, Request, status
+from fastapi.responses import JSONResponse
 from loguru import logger
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
@@ -17,6 +18,19 @@ Aggregations over a corpus of arXiv papers, computed in SQL, plus a grounded que
 answering endpoint over their abstracts. Papers are loaded by the `pipeline ingest` CLI.
 """
 
+# A refused connection reaches us as a bare OSError: asyncpg raises it before SQLAlchemy
+# has a DBAPI error to wrap, so catching SQLAlchemyError alone misses the likeliest fault.
+_DB_UNAVAILABLE = (SQLAlchemyError, OSError)
+
+
+async def _database_unavailable(request: Request, exc: Exception) -> JSONResponse:
+    """503, not 500: the database being down is an infrastructure state, not a bug here."""
+    logger.error("database unavailable serving {}: {}", request.url.path, exc)
+    return JSONResponse(
+        status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        content={"detail": "database unavailable"},  # never the driver's text
+    )
+
 
 def create_app() -> FastAPI:
     """One app per process. Routers are mounted here, never imported for side effects."""
@@ -25,17 +39,13 @@ def create_app() -> FastAPI:
 
     @application.get("/health", tags=["ops"])
     async def health(session: Annotated[AsyncSession, Depends(get_session)]) -> dict[str, str]:
-        """Healthy means "can serve", and serving needs the database — so it is checked."""
-        try:
-            await session.execute(text("SELECT 1"))
-        except SQLAlchemyError as exc:
-            logger.error("health check failed: {}", exc)
-            raise HTTPException(
-                status.HTTP_503_SERVICE_UNAVAILABLE, "database unavailable"
-            ) from exc
+        """Healthy means "can serve", and serving needs the database — so it is queried."""
+        await session.execute(text("SELECT 1"))
         return {"status": "ok"}
 
     application.include_router(analytics_router)
+    for failure in _DB_UNAVAILABLE:
+        application.add_exception_handler(failure, _database_unavailable)
     return application
 
 
