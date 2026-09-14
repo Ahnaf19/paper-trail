@@ -49,7 +49,9 @@ class FastEmbedEmbedder:
             from fastembed import TextEmbedding
 
             logger.info("loading embedding model {}", self._model_id)
-            self._model = TextEmbedding(model_name=self._model_id)
+            self._model = TextEmbedding(
+                model_name=self._model_id, cache_dir=settings.embedding_cache_dir
+            )
         return self._model
 
     def embed_documents(self, texts: list[str]) -> list[list[float]]:

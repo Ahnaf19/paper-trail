@@ -42,6 +42,9 @@ class Settings(BaseSettings):
     # Embeddings (PRD §6.2). The dimension is pinned in the schema, not here.
     embedding_model: str = "BAAI/bge-small-en-v1.5"
     embedding_batch_size: int = Field(default=64, ge=1)
+    # Where the model files live. Left unset fastembed picks $TMPDIR/fastembed_cache,
+    # which a tmpfs mount would wipe -- so the image sets this to a real directory.
+    embedding_cache_dir: str | None = None
 
     # Retrieval (PRD §6.10). The threshold is calibrated -- see the note below.
     retrieval_top_k: int = Field(default=5, ge=1, le=20)
