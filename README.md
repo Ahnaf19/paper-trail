@@ -53,8 +53,12 @@ $ curl -s 'localhost:8000/stats/top-authors?n=3'
 
 ### `GET /health`
 
-Returns `{"status": "ok"}`, or 503 if the database is unreachable — so a container
-healthcheck gates on "can actually serve", not merely "process is alive".
+Returns `{"status": "ok"}` — after querying the database, so a container healthcheck gates
+on "can actually serve" rather than "process is alive".
+
+**Every endpoint returns 503 `{"detail": "database unavailable"}` when the database is
+down**, never a 500 or a traceback. The driver's message goes to the server log, where an
+operator can act on it, and not into the response.
 
 ### Reading the responses
 
