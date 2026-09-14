@@ -1,11 +1,135 @@
 # arXiv corpus — ingest, aggregate, ask
 
-A CLI that ingests arXiv papers into PostgreSQL, an HTTP API that serves aggregations
-computed in SQL, and (in progress) a `/ask` endpoint that answers questions grounded in
-the stored abstracts.
+A CLI that ingests arXiv papers into PostgreSQL, and one FastAPI service that both serves
+aggregations computed in SQL and answers natural-language questions grounded in the stored
+abstracts.
 
-> **Status:** ingestion, the aggregation API and `/ask` are built and running over a
-> 1,200-paper corpus (`cs.AI`, `cs.CL`, `cs.LG`). The container entrypoint is the remaining work.
+```
+  arXiv Atom API                      [ external ]
+       │   1 request / 3s · exponential backoff on 429
+       ▼
+  pipeline ingest      fetch ▸ parse ▸ upsert ▸ embed        one transaction per page
+       │
+       ▼
+  PostgreSQL + pgvector                                      papers · authors · categories
+       │                                                     · 384-dim vectors
+       ├──────────────────────────────┐
+       ▼                              ▼
+  GET /stats/*                   POST /ask
+  GROUP BY in SQL                embed ▸ top-k ▸ threshold ▸ generate
+                                      │
+                                      ▼
+                                 OpenAI-compatible LLM       [ external ]
+```
+
+The two read paths never contact arXiv. The write path never talks to the LLM.
+
+## Quick start
+
+Requires Docker and roughly 3 GB of disk (the image bakes in the embedding model).
+
+```bash
+cp .env.example .env          # then put a Groq key in LLM_API_KEY — see Configuration
+docker compose up --build     # database + migrations + API
+
+# in another terminal: load the corpus (~2 minutes for 1,200 papers)
+docker compose exec api pipeline ingest -c cs.AI -c cs.CL -c cs.LG
+
+curl -s localhost:8000/stats/top-categories?n=5
+```
+
+There is no manual migration step — the container runs `alembic upgrade head` before the
+API starts, so a fresh database becomes a working one with one command.
+
+`/docs` serves the interactive OpenAPI page once the stack is up.
+
+## Configuration
+
+Everything is an environment variable; nothing is hardcoded. `.env.example` lists them all.
+
+| Variable | Default | Notes |
+|---|---|---|
+| `POSTGRES_USER` / `_PASSWORD` / `_DB` | `pipeline` | Used by the database container. |
+| `DATABASE_URL` | `…@localhost:5432/pipeline` | For running the CLI **from your host**. The API container overrides it to reach `db` on the compose network. |
+| `LLM_API_KEY` | — | 🔴 The only value you must supply. Free at [console.groq.com/keys](https://console.groq.com/keys), no card. |
+| `LLM_BASE_URL` | `https://api.groq.com/openai/v1` | Any OpenAI-compatible endpoint. |
+| `LLM_MODEL` | `openai/gpt-oss-20b` | Tested 15 Sep 2026 — see the warning under `/ask`. |
+| `RELEVANCE_THRESHOLD` | `0.73` | Calibrated, not chosen. See `/ask`. |
+| `RETRIEVAL_TOP_K` | `5` | Papers passed to the model as context. |
+| `ARXIV_PAGE_SIZE` | `200` | arXiv's documented ceiling is 2000. |
+| `ARXIV_MIN_REQUEST_INTERVAL` | `3.0` | arXiv's Terms of Use floor. Cannot be set lower. |
+| `LOG_LEVEL` | `INFO` | |
+
+**Without `LLM_API_KEY` everything still works except answer generation** — `/ask` returns
+the retrieved papers with an explicit message instead of an answer. Aggregations, ingestion
+and retrieval are unaffected.
+
+## Ingesting papers
+
+```bash
+docker compose exec api pipeline ingest -c cs.AI -c cs.CL -c cs.LG   # default --max 1100
+docker compose exec api pipeline ingest -c cs.AI --full              # ignore the watermark
+docker compose exec api pipeline wipe                                # delete everything
+```
+
+**Re-running is safe and cheap.** Papers are upserted on `arxiv_id`, so a second run creates
+no duplicates — that is a database constraint, not application logic. Papers are sorted by
+last-update descending, so one high-water mark catches both new papers and revised old ones;
+the scan stops as soon as a whole page is older than the mark.
+
+Measured on a 1,200-paper corpus: a cold run takes **~128 s** (≈86% of that is computing
+embeddings), and a re-run with nothing new takes **3.0 s per page** — which is exactly the
+mandated throttle and nothing else, because unchanged papers are never re-embedded.
+
+Ingestion is deliberately **synchronous**. arXiv's Terms of Use require "a single connection
+at a time", so there is no concurrency to win; async here would add ceremony and trickier
+transaction handling for zero throughput.
+
+## Schema
+
+```
+  paper                         author            category
+  ─────                         ──────            ────────
+  id            PK              id    PK          id    PK
+  arxiv_id      UNIQUE  ◄── identity for idempotent re-ingest
+  title                         name  UNIQUE      code  UNIQUE
+  abstract                         ▲                 ▲
+  primary_category                 │                 │
+  published     TIMESTAMPTZ        │                 │
+  updated       TIMESTAMPTZ  ◄── drives the watermark│
+  doi           NULL               │                 │
+  journal_ref   NULL               │                 │
+     ▲  ▲  ▲                       │                 │
+     │  │  └──── paper_author ──────┘                 │
+     │  │        (paper_id, author_id, position)      │
+     │  └─────── paper_category ──────────────────────┘
+     │           (paper_id, category_id)
+     │
+     └────────── embedding
+                 paper_id      PK/FK   ON DELETE CASCADE
+                 vector        VECTOR(384)
+                 content_hash  sha256(title + "\n" + abstract)
+                 model         which model produced it
+
+  ingest_state — watermark, keyed by the sorted category set (see below)
+```
+
+Three details carry most of the design:
+
+- **`arxiv_id` is stored without its version suffix**, and is unique. That makes idempotent
+  re-ingest a constraint rather than a read-then-write check that can race.
+- **`content_hash` plus `model`** decide whether a paper needs re-embedding. A metadata-only
+  revision bumps `updated` but must not trigger a re-embed — and changing the embedding model
+  invalidates every row automatically, through the same mechanism.
+- **The watermark is keyed by the category set.** Ingest `cs.AI` alone, then re-run adding
+  `cs.LG`, and a naive watermark would stop early and silently skip every `cs.LG` paper older
+  than the mark — a successful-looking run with a large hole in it. A key mismatch forces a
+  full scan instead.
+
+**Embeddings are written in the same transaction as the paper.** A crash between storing a
+paper and storing its vector is not handled; it is impossible. That is the whole reason
+pgvector was chosen over a separate vector store — a separate store reintroduces a dual-write
+problem that migrations and transactions would no longer cover.
 
 ## Aggregation API
 
@@ -188,3 +312,42 @@ These are deliberate, and stated rather than hidden.
   trade recall for microseconds; it starts to earn its place around 100k rows.
 - **The corpus is a snapshot.** `pipeline ingest` re-run picks up new and revised papers via
   the watermark, but nothing schedules it.
+
+## Tests
+
+```bash
+uv sync && uv run pytest        # needs a local Postgres; see below
+```
+
+100 tests. They **never touch the network, an LLM, or download a model** — the embedding
+provider and the LLM client both sit behind small interfaces, and the suite injects fakes
+before the app starts. The test database is created and migrated by the real Alembic
+migrations, so the schema under test is the schema that ships.
+
+They are aimed at what would actually break: XML parsing against a saved real capture,
+idempotent re-ingest, staleness detection, aggregation counts on seeded data, and the
+no-good-match path.
+
+## What I would do with more time
+
+Roughly in the order I would pick them up.
+
+1. **Run the ingest on a machine arXiv will talk to.** Both IPs available to me are
+   rate-limited by arXiv (429 on every uncached request), so the 1,200-paper corpus was
+   captured once through a VPN and replayed locally through the real client. Every stage is
+   exercised, but a long live multi-page run has not been.
+2. **Schedule the ingest.** The incremental path is built and cheap — a re-run with nothing
+   new costs one throttled request per page — but nothing triggers it. A cron container or
+   an external scheduler is a small change.
+3. **Gap-fill the time series behind a flag.** Periods with no papers are currently omitted.
+   That is honest, but a `?fill=true` using `generate_series` would suit some charts better.
+4. **A read-only database role for the API.** Both read paths only `SELECT`, but they connect
+   as the owner. Splitting the roles is the real hardening step and costs almost nothing.
+5. **Re-embed in batches as a separate command.** Changing the embedding model currently
+   means re-running ingest; a `pipeline reembed` working purely from stored text would be
+   clearer and would not touch arXiv at all.
+6. **Harden against prompt injection beyond the architectural bound.** Today the model has
+   no tools, so the worst case is a wrong answer. If it ever gained tools, the delimiting and
+   the system prompt alone would not be enough, and this would need real work.
+7. **An ANN index, once measured.** Exact search is 7.6 ms over 1,200 vectors. At ~100k it
+   would be worth benchmarking HNSW against the recall it costs — but not before.
