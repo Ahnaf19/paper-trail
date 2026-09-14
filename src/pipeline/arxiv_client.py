@@ -50,6 +50,9 @@ class ArxivClient:
         )
         for attempt in range(settings.arxiv_max_retries + 1):
             self._wait_turn()
+            # Logged after the wait, not before it: FR-1.3 is verified by the gap between
+            # these lines, and logging on the far side of a sleep would understate it.
+            logger.info("requesting arxiv start={} size={}", start, page_size)
             try:
                 response = self._client.get(url)
                 self._last_request_at = time.monotonic()
@@ -83,7 +86,6 @@ class ArxivClient:
         """Yield `(start, raw_xml)` per page. The caller decides when to stop."""
         page_size = settings.arxiv_page_size
         for _ in range(_MAX_PAGES):
-            logger.info("fetching arxiv page start={} size={}", start, page_size)
             yield start, self._get(query, start, page_size)
             start += page_size
         logger.error("hit the {}-page safety bound; caller never stopped", _MAX_PAGES)
