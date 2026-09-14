@@ -49,7 +49,9 @@ $ curl -s 'localhost:8000/stats/top-authors?n=3'
  {"author": "Abhishek Sharma", "count": 1}]
 ```
 
-`n` defaults to 10 and is bounded to 1–100 on both top-N endpoints.
+`n` defaults to 10 and is bounded to 1–100 on both top-N endpoints. The time series is
+not paginated — its row count is bounded by the corpus (one row per period per category),
+not by anything the caller can send, so there is no parameter to cap.
 
 ### `GET /health`
 

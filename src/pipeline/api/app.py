@@ -20,6 +20,7 @@ answering endpoint over their abstracts. Papers are loaded by the `pipeline inge
 
 # A refused connection reaches us as a bare OSError: asyncpg raises it before SQLAlchemy
 # has a DBAPI error to wrap, so catching SQLAlchemyError alone misses the likeliest fault.
+# OSError is broad, and only accurate while the database is the sole thing we open.
 _DB_UNAVAILABLE = (SQLAlchemyError, OSError)
 
 

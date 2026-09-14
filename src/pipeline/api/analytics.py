@@ -29,6 +29,17 @@ def _midnight_utc(day: date) -> datetime:
     return datetime.combine(day, time.min, tzinfo=UTC)
 
 
+def _end_of_day_utc(day: date) -> datetime:
+    """The exclusive upper bound for an inclusive `to`.
+
+    Adding a day would overflow on `date.max`, which reaches the client as a 500; the last
+    representable instant is the same bound for every date a caller can actually send.
+    """
+    if day == date.max:
+        return datetime.combine(day, time.max, tzinfo=UTC)
+    return _midnight_utc(day + timedelta(days=1))
+
+
 @router.get("/papers-over-time", summary="Paper count by category over time")
 async def papers_over_time(
     session: SessionDep,
@@ -42,7 +53,7 @@ async def papers_over_time(
     Periods with no papers are omitted rather than gap-filled; charting libraries handle a
     missing point, and a fabricated zero row is a claim we cannot make about a sparse corpus.
     """
-    if date_from and date_to and date_from > date_to:
+    if date_from is not None and date_to is not None and date_from > date_to:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "`from` is after `to`")
 
     # date_trunc on a timestamptz silently uses the session's time zone; pinning it to UTC
@@ -64,8 +75,8 @@ async def papers_over_time(
     if date_from is not None:
         statement = statement.where(Paper.published >= _midnight_utc(date_from))
     if date_to is not None:
-        # `to` names an inclusive day, so the bound is midnight at the start of the next.
-        statement = statement.where(Paper.published < _midnight_utc(date_to + timedelta(days=1)))
+        # `to` names an inclusive day, so the bound is the start of the next one.
+        statement = statement.where(Paper.published < _end_of_day_utc(date_to))
 
     rows = (await session.execute(statement)).all()
     return [PeriodPoint(period=label, category=code, count=count) for label, code, count in rows]

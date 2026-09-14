@@ -150,3 +150,10 @@ def test_a_database_failure_is_a_clean_503(client):
     assert response.status_code == 503
     assert response.json() == {"detail": "database unavailable"}
     assert "127.0.0.1" not in response.text
+
+
+def test_the_maximum_date_does_not_overflow(client, corpus):
+    """`to + 1 day` raises OverflowError at date.max, which reaches the client as a 500."""
+    response = client.get("/stats/papers-over-time?to=9999-12-31")
+    assert response.status_code == 200
+    assert len(response.json()) == 4
