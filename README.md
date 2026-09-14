@@ -4,8 +4,9 @@ A CLI that ingests arXiv papers into PostgreSQL, an HTTP API that serves aggrega
 computed in SQL, and (in progress) a `/ask` endpoint that answers questions grounded in
 the stored abstracts.
 
-> **Status:** ingestion and the aggregation API are built. The RAG endpoint and the
-> container entrypoint are the remaining work.
+> **Status:** ingestion and the aggregation API are built and running over a 1,200-paper
+> corpus (`cs.AI`, `cs.CL`, `cs.LG`). The RAG endpoint and the container entrypoint are the
+> remaining work.
 
 ## Aggregation API
 
@@ -27,26 +28,31 @@ Paper counts per period and category.
 | `from`, `to` | `YYYY-MM-DD` | unbounded | **Inclusive** of both days, resolved in UTC. |
 
 ```console
-$ curl -s 'localhost:8000/stats/papers-over-time?granularity=year&category=cs.LG'
-[{"period": "2019", "category": "cs.LG", "count": 16},
- {"period": "2020", "category": "cs.LG", "count": 5}]
+$ curl -s 'localhost:8000/stats/papers-over-time?granularity=year&category=cs.CL'
+[{"period": "2023", "category": "cs.CL", "count": 1},
+ {"period": "2024", "category": "cs.CL", "count": 4},
+ {"period": "2025", "category": "cs.CL", "count": 17},
+ {"period": "2026", "category": "cs.CL", "count": 319}]
 ```
 
 ### `GET /stats/top-categories`
 
 ```console
 $ curl -s 'localhost:8000/stats/top-categories?n=5'
-[{"category": "cs.AI", "count": 50}, {"category": "cs.LG", "count": 21},
- {"category": "stat.ML", "count": 16}, {"category": "cs.CV", "count": 13},
- {"category": "cs.CL", "count": 8}]
+[{"category": "cs.AI", "count": 622}, {"category": "cs.LG", "count": 606},
+ {"category": "cs.CL", "count": 341}, {"category": "cs.CV", "count": 126},
+ {"category": "stat.ML", "count": 86}]
 ```
+
+Counts exceed the corpus size in total because a paper carries several categories — each
+is counted once per category it belongs to, and once only.
 
 ### `GET /stats/top-authors`
 
 ```console
 $ curl -s 'localhost:8000/stats/top-authors?n=3'
-[{"author": "Vahid Behzadan", "count": 3}, {"author": "William Hsu", "count": 3},
- {"author": "Abhishek Sharma", "count": 1}]
+[{"author": "Philip Torr", "count": 5}, {"author": "Zihan Wang", "count": 5},
+ {"author": "Jian Li", "count": 4}]
 ```
 
 `n` defaults to 10 and is bounded to 1–100 on both top-N endpoints. The time series is
@@ -81,3 +87,18 @@ A few behaviours are deliberate and worth stating rather than leaving to be disc
 - **An empty corpus returns `[]` with 200.** An empty chart is a valid chart.
 - **Author identity is the name string.** arXiv publishes no author IDs, so two people
   who share a name are one row here. Cheap to state, expensive to fix.
+
+### Performance
+
+Measured over the 1,200-paper corpus with `EXPLAIN ANALYZE`:
+
+| Endpoint | Execution |
+|---|---|
+| `papers-over-time` | 4.2 ms |
+| `top-categories` | 1.5 ms |
+| `top-authors` | 6.5 ms |
+
+**No indexes are defined beyond the primary and unique keys.** Every plan is a sequential
+scan over a few thousand rows, and an index added without a measurement is decoration.
+The join tables are where one would first earn its place — roughly above 100k link rows,
+or ~50,000 papers.
