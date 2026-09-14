@@ -1,8 +1,4 @@
-"""Alembic environment.
-
-Sync throughout, deliberately (PRD §6.9): migrations run once at startup, so the async
-template would add complexity for no benefit even though the API itself is async.
-"""
+"""Alembic environment. Sync even though the API is async — see PRD §6.9."""
 
 from logging.config import fileConfig
 
@@ -14,15 +10,12 @@ from pipeline.models import Base
 
 config = context.config
 
-# The URL comes from the environment, never from alembic.ini — no connection string
-# is committed to the repository (NFR-6, NFR-7).
+# From the environment, so no connection string is ever committed (NFR-6, NFR-7).
 config.set_main_option("sqlalchemy.url", settings.sync_database_url)
 
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# The declarative models are the schema's source of truth; autogenerate diffs against
-# this, and the naming convention on the metadata keeps the output deterministic.
 target_metadata = Base.metadata
 
 
@@ -50,8 +43,7 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection,
             target_metadata=target_metadata,
-            # Without this, a changed column type is silently missed by autogenerate.
-            compare_type=True,
+            compare_type=True,  # else a changed column type is silently missed
         )
         with context.begin_transaction():
             context.run_migrations()

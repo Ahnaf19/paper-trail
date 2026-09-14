@@ -1,4 +1,4 @@
-"""Builds the sync and async engines and hands out sessions."""
+"""Sync and async engines, both derived from one DATABASE_URL (PRD §6.9)."""
 
 from collections.abc import AsyncIterator
 
@@ -8,9 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 
 from pipeline.config import settings
 
-# PRD §6.9 splits the workload: the ingestion CLI and Alembic are sync, the API is async.
-# Both engines derive from the single DATABASE_URL the reviewer sets. Engine construction
-# is lazy — no connection is opened here — so importing this module is cheap and safe.
+# Construction is lazy — importing this module opens no connection.
 sync_engine = create_engine(settings.sync_database_url, pool_pre_ping=True)
 async_engine = create_async_engine(settings.async_database_url, pool_pre_ping=True)
 
@@ -19,6 +17,6 @@ AsyncSessionLocal = async_sessionmaker(bind=async_engine, expire_on_commit=False
 
 
 async def get_session() -> AsyncIterator[AsyncSession]:
-    """FastAPI dependency yielding one async session per request."""
+    """FastAPI dependency yielding one session per request."""
     async with AsyncSessionLocal() as session:
         yield session

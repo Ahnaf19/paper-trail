@@ -6,13 +6,11 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
       POSTGRES_DB: ${POSTGRES_DB}
     ports:
-      # Published so the ingestion CLI can be run from the host against the same database.
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_PORT:-5432}:5432"  # so the CLI can run from the host
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      # The API waits on this. Without it, the first `up` on a cold volume races
-      # Postgres' initdb and looks broken to anyone trying the project (NFR-1).
+      # The API waits on this, so a cold first `up` does not race initdb (NFR-1).
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
       interval: 3s
       timeout: 3s

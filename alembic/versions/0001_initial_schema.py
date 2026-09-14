@@ -1,11 +1,4 @@
-"""initial schema
-
-Creates the pgvector extension and the six core tables. A fresh, empty Postgres
-reaches a working schema with `alembic upgrade head` and nothing else (FR-3.4).
-
-Revision ID: 0001
-Revises:
-"""
+"""initial schema — pgvector extension plus the six core tables."""
 
 from collections.abc import Sequence
 
@@ -19,9 +12,7 @@ depends_on: str | Sequence[str] | None = None
 
 
 def upgrade() -> None:
-    # Autogenerate cannot see this: it diffs table metadata, and an extension is not a
-    # table. It belongs in the FIRST migration so an empty database becomes a working
-    # one in a single command, before anything needs a `vector` column (0002, at M4).
+    # Hand-added: autogenerate diffs tables, and an extension is not one.
     op.execute("CREATE EXTENSION IF NOT EXISTS vector")
 
     op.create_table(
@@ -100,10 +91,8 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    # Deliberately does NOT drop the `vector` extension. An extension is database-wide,
-    # so dropping it could break objects outside this schema that we never created --
-    # a wider blast radius than the migration that added it. Tables are dropped in
-    # reverse dependency order.
+    # The extension is left in place: it is database-wide, so dropping it would reach
+    # further than this migration ever did.
     op.drop_table("paper_category")
     op.drop_table("paper_author")
     op.drop_table("paper")
