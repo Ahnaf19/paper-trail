@@ -48,11 +48,14 @@ async def lifespan(application: FastAPI) -> AsyncIterator[None]:
     """
     if not getattr(application.state, "embedder", None):
         application.state.embedder = FastEmbedEmbedder()
-    if not getattr(application.state, "llm", None):
+    owns_llm = not getattr(application.state, "llm", None)
+    if owns_llm:
         application.state.llm = OpenAICompatibleClient()
     await asyncio.to_thread(application.state.embedder.embed_query, "warmup")
     logger.info("embedder ready: {}", application.state.embedder.model_id)
     yield
+    if owns_llm:
+        await application.state.llm.aclose()
 
 
 def create_app() -> FastAPI:

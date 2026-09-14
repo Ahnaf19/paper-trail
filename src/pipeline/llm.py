@@ -25,6 +25,18 @@ class OpenAICompatibleClient:
         self._client = client
         self._owns_client = client is None
 
+    def _http(self) -> httpx.AsyncClient:
+        """One pooled client for the process. Building one per request pays a fresh TLS
+        handshake every time, which is pure latency against a host we always reuse."""
+        if self._client is None:
+            self._client = httpx.AsyncClient(timeout=settings.llm_timeout_seconds)
+        return self._client
+
+    async def aclose(self) -> None:
+        if self._owns_client and self._client is not None:
+            await self._client.aclose()
+            self._client = None
+
     @property
     def configured(self) -> bool:
         """No key means degrade to retrieval-only, never a 500 halfway through."""
@@ -34,9 +46,8 @@ class OpenAICompatibleClient:
         if not self.configured:
             raise LLMUnavailableError("no API key configured")
 
-        client = self._client or httpx.AsyncClient(timeout=settings.llm_timeout_seconds)
         try:
-            response = await client.post(
+            response = await self._http().post(
                 f"{settings.llm_base_url.rstrip('/')}/chat/completions",
                 headers={"Authorization": f"Bearer {settings.llm_api_key}"},
                 json={
@@ -52,9 +63,6 @@ class OpenAICompatibleClient:
             # The message, never the exception: a base URL can carry a key in the query.
             logger.error("llm request failed: {}", type(exc).__name__)
             raise LLMUnavailableError("could not reach the language model") from exc
-        finally:
-            if self._owns_client:
-                await client.aclose()
 
         if response.status_code != 200:
             logger.error("llm returned {} for model {}", response.status_code, settings.llm_model)
