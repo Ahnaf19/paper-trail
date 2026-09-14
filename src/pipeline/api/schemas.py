@@ -2,7 +2,7 @@
 
 from enum import StrEnum
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, Field
 
 
 class Granularity(StrEnum):
@@ -12,24 +12,23 @@ class Granularity(StrEnum):
     YEAR = "year"
 
 
-class _Point(BaseModel):
-    """Built straight from a result row, so the query's labels are the JSON keys."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    count: int = Field(description="Distinct papers in this bucket.")
+# Field order is the JSON key order: label first, then the number, as a chart reads it.
+_COUNT = Field(description="Distinct papers in this bucket.")
 
 
-class PeriodPoint(_Point):
+class PeriodPoint(BaseModel):
     """One (period, category) bucket of the time series."""
 
     period: str = Field(description="`YYYY-MM` for month, `YYYY` for year.", examples=["2026-01"])
     category: str = Field(examples=["cs.AI"])
+    count: int = _COUNT
 
 
-class CategoryCount(_Point):
+class CategoryCount(BaseModel):
     category: str = Field(examples=["cs.LG"])
+    count: int = _COUNT
 
 
-class AuthorCount(_Point):
+class AuthorCount(BaseModel):
     author: str = Field(examples=["Ada Lovelace"])
+    count: int = _COUNT

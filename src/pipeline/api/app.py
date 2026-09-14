@@ -8,6 +8,7 @@ from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from pipeline.api.analytics import router as analytics_router
 from pipeline.db import get_session
 from pipeline.logging import configure_logging
 
@@ -34,6 +35,7 @@ def create_app() -> FastAPI:
             ) from exc
         return {"status": "ok"}
 
+    application.include_router(analytics_router)
     return application
 
 
