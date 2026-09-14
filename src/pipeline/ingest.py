@@ -10,6 +10,7 @@ from sqlalchemy.orm import Session
 from pipeline.arxiv_client import ArxivClient, build_query
 from pipeline.arxiv_parser import parse_feed
 from pipeline.db import SessionLocal
+from pipeline.embeddings import Embedder, FastEmbedEmbedder, refresh_embeddings
 from pipeline.upsert import upsert_papers
 from pipeline.watermark import (
     categories_key,
@@ -28,6 +29,7 @@ class IngestReport:
     updated: int = 0
     unchanged: int = 0
     stopped_early: bool = False
+    embedded: int = 0
     changed_paper_ids: list[int] | None = None
 
 
@@ -38,6 +40,7 @@ def run_ingest(
     full: bool = False,
     client: ArxivClient | None = None,
     session_factory: Callable[[], Session] = SessionLocal,
+    embedder: Embedder | None = None,
 ) -> IngestReport:
     """Fetch until `max_papers`, the feed ends, or the watermark says everything below is old."""
     key = categories_key(categories)
@@ -53,6 +56,7 @@ def run_ingest(
         mark.isoformat() if mark else "none",
     )
 
+    embedder = embedder or FastEmbedEmbedder()
     report = IngestReport(changed_paper_ids=[])
     newest_seen: datetime | None = None
     owns_client = client is None
@@ -65,9 +69,12 @@ def run_ingest(
                 logger.info("feed returned no entries at start={}; done", start)
                 break
 
-            # One transaction per page: a crash loses this page, never the run.
+            # One transaction per page: a crash loses this page, never the run. The
+            # embeddings are written inside it too, so a paper can never be committed
+            # without its vector (PRD §6.1).
             with session_factory() as session:
                 result = upsert_papers(session, page.papers)
+                embedded = refresh_embeddings(session, result.changed_paper_ids, embedder)
                 session.commit()
 
             report.pages_fetched += 1
@@ -76,6 +83,7 @@ def run_ingest(
             report.updated += result.updated
             report.unchanged += result.unchanged
             report.changed_paper_ids.extend(result.changed_paper_ids)
+            report.embedded += embedded
 
             page_newest = max(p.updated for p in page.papers)
             newest_seen = page_newest if newest_seen is None else max(newest_seen, page_newest)

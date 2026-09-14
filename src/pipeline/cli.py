@@ -40,12 +40,13 @@ def ingest(
         raise typer.Exit(code=1) from exc
 
     logger.success(
-        "done: {} pages, {} papers ({} new, {} updated, {} unchanged){}",
+        "done: {} pages, {} papers ({} new, {} updated, {} unchanged, {} embedded){}",
         report.pages_fetched,
         report.papers_seen,
         report.inserted,
         report.updated,
         report.unchanged,
+        report.embedded,
         " [stopped early]" if report.stopped_early else "",
     )
 

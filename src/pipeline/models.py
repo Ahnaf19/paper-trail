@@ -2,6 +2,7 @@
 
 from datetime import datetime
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     DateTime,
     ForeignKey,
@@ -10,6 +11,7 @@ from sqlalchemy import (
     SmallInteger,
     String,
     Text,
+    func,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
@@ -89,3 +91,21 @@ class IngestState(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     categories_key: Mapped[str] = mapped_column(Text, unique=True)  # sorted, "cs.AI|cs.LG"
     watermark: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+
+
+# Pinned in the schema, not config: changing it is a migration plus a full re-embed.
+EMBEDDING_DIMENSIONS = 384
+
+
+class Embedding(Base):
+    """One vector per paper, written in the same transaction as the paper (PRD §6.1)."""
+
+    __tablename__ = "embedding"
+
+    paper_id: Mapped[int] = mapped_column(
+        ForeignKey("paper.id", ondelete="CASCADE"), primary_key=True
+    )
+    vector: Mapped[list[float]] = mapped_column(Vector(EMBEDDING_DIMENSIONS))
+    content_hash: Mapped[str] = mapped_column(String(64))  # sha256 of the embedded text
+    model: Mapped[str] = mapped_column(String(_NAME_LENGTH))  # a model change invalidates the row
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())

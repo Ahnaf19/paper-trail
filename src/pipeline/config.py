@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     arxiv_user_agent: str = "pipeline-arxiv-assessment/0.1"
     arxiv_watermark_margin_days: int = Field(default=1, ge=0)  # covers page-boundary drift
 
+    # Embeddings (PRD §6.2). The dimension is pinned in the schema, not here.
+    embedding_model: str = "BAAI/bge-small-en-v1.5"
+    embedding_batch_size: int = Field(default=64, ge=1)
+
     @property
     def sync_database_url(self) -> str:
         """For the ingestion CLI and Alembic (PRD §6.9)."""

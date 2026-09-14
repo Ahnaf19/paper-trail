@@ -9,6 +9,7 @@ dependencies = [
     "asyncpg>=0.31.0",
     "defusedxml>=0.7.1",
     "fastapi>=0.141.1",
+    "fastembed>=0.8.0",
     "httpx>=0.28.1",
     "loguru>=0.7.3",
     "pgvector>=0.5.0",
@@ -58,9 +59,9 @@ select = [
 ignore = ["E501", "ANN401"]
 
 [tool.ruff.lint.per-file-ignores]
-# Tests assert (S101), use fixture values that look like secrets (S105/S106),
-# and gain nothing from annotating every fixture.
-"tests/**" = ["S101", "S105", "S106", "ANN"]
+# Tests assert (S101), use fixture values that look like secrets (S105/S106), seed a
+# PRNG for deterministic fake vectors (S311), and gain nothing from annotating fixtures.
+"tests/**" = ["S101", "S105", "S106", "S311", "ANN"]
 # Alembic migrations are generated; their signatures are fixed by the tool.
 "alembic/versions/*" = ["ANN", "E402"]
 
