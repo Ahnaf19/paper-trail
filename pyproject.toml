@@ -19,6 +19,9 @@ dependencies = [
     "uvicorn[standard]>=0.53.0",
 ]
 
+[project.scripts]
+pipeline = "pipeline.cli:app"
+
 [dependency-groups]
 dev = [
     "pytest>=9.1.1",
