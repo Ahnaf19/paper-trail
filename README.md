@@ -77,6 +77,11 @@ own taxonomy: **<https://arxiv.org/category_taxonomy>**. To see which categories
 loaded in your corpus, call `GET /stats/top-categories?n=100` — the 1,200-paper default run
 spans 92 of them.
 
+A mistyped code cannot be detected: arXiv answers it exactly as it answers a real but empty
+category — `200`, `totalResults=0`, no entries. So rather than guess, a run that fetched no
+usable page at all logs a **warning** naming the likely cause and **exits non-zero**, instead
+of the green `0 papers` success it would otherwise look like.
+
 **Re-running is safe and cheap.** Papers are upserted on `arxiv_id`, so a second run creates
 no duplicates — that is a database constraint, not application logic. Papers are sorted by
 last-update descending, so one high-water mark catches both new papers and revised old ones;
@@ -181,7 +186,7 @@ Paper counts per period and category.
 | Param | Type | Default | Notes |
 |---|---|---|---|
 | `granularity` | `month` \| `year` | `month` | Anything else is a 422. |
-| `category` | string | all | Restrict to one category, e.g. `cs.LG`. |
+| `category` | string | all | Restrict to one category, e.g. `cs.LG`. A code the corpus does not hold is a **404**, not an empty list — see below. |
 | `from`, `to` | `YYYY-MM-DD` | unbounded | **Inclusive** of both days, resolved in UTC. |
 
 ```console
@@ -190,6 +195,17 @@ $ curl -s 'localhost:8000/stats/papers-over-time?granularity=year&category=cs.CL
  {"period": "2024", "category": "cs.CL", "count": 4},
  {"period": "2025", "category": "cs.CL", "count": 17},
  {"period": "2026", "category": "cs.CL", "count": 319}]
+```
+
+**An unknown `category` is a 404, deliberately.** Otherwise `[]` would mean two different
+things — "this category has no papers in that window" and "you mistyped the code" — and a
+caller plotting an empty chart could not tell which. Valid codes come from
+[arXiv's taxonomy](https://arxiv.org/category_taxonomy); `/stats/top-categories` lists the
+ones actually loaded.
+
+```console
+$ curl -s 'localhost:8000/stats/papers-over-time?category=cs.Al'    # capital i, not L
+{"detail": "no category 'cs.Al' in this corpus — see GET /stats/top-categories for what is loaded"}
 ```
 
 ### `GET /stats/top-categories`

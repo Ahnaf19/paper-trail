@@ -150,3 +150,16 @@ def test_run_ends_when_the_feed_is_exhausted(session):
 
     assert report.papers_seen == 1
     assert client.pages_requested == 1
+
+
+def test_an_entirely_empty_feed_fetches_no_pages(session):
+    """The signal `paper ingest` turns into a non-zero exit — see tests/test_cli.py.
+
+    A mistyped category and a genuinely empty one are indistinguishable at the API, so
+    the loop only reports what it saw: no usable page at all.
+    """
+    report, client = run(factory_for(session), [[]])
+
+    assert report.pages_fetched == 0
+    assert report.papers_seen == 0
+    assert client.pages_requested == 1

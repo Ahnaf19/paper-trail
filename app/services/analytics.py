@@ -56,6 +56,17 @@ async def papers_over_time(
     return [PeriodPoint(period=label, category=code, count=count) for label, code, count in rows]
 
 
+async def category_exists(session: AsyncSession, code: str) -> bool:
+    """Whether the corpus holds this category at all.
+
+    Without it an empty series is ambiguous: `cs.CY` with nothing in the window and a
+    mistyped `cs.Al` both return `[]`, and the caller cannot tell a quiet period from a
+    bad request. `Category.code` is unique, so this is an index lookup.
+    """
+    statement = select(Category.id).where(Category.code == code).limit(1)
+    return (await session.execute(statement)).first() is not None
+
+
 async def top_categories(session: AsyncSession, *, n: int) -> list[CategoryCount]:
     """Ties are broken by category code, so repeating the request repeats the rows."""
     count = func.count(PaperCategory.paper_id.distinct()).label("count")

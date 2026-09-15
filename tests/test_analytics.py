@@ -87,6 +87,30 @@ def test_papers_over_time_filters_by_category(client, corpus):
     ]
 
 
+def test_an_unknown_category_is_404_not_an_empty_series(client, corpus):
+    """The whole point: `[]` must mean one thing. A mistyped code is a bad request.
+
+    `cs.Al` is a capital i, not a lowercase L — the realistic typo, and the one that
+    used to come back as a plain 200 with an empty body.
+    """
+    response = client.get("/stats/papers-over-time?category=cs.Al")
+    assert response.status_code == 404
+    assert "cs.Al" in response.json()["detail"]
+    assert "/stats/top-categories" in response.json()["detail"]
+
+
+def test_all_is_not_a_magic_value(client, corpus):
+    """`?category=all` reads as a category name, so it must not look like "everything"."""
+    assert client.get("/stats/papers-over-time?category=all").status_code == 404
+
+
+def test_a_known_category_with_an_empty_window_is_still_200(client, corpus):
+    """The counterpart: a real category outside the date range is empty, not missing."""
+    response = client.get("/stats/papers-over-time?category=cs.LG&from=2019-01-01&to=2019-12-31")
+    assert response.status_code == 200
+    assert response.json() == []
+
+
 def test_date_range_includes_the_whole_final_day(client, corpus):
     """`to` names a day, not an instant — a naive `<= to` would drop the 20th entirely."""
     response = client.get("/stats/papers-over-time?from=2026-01-16&to=2026-01-20")

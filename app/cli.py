@@ -45,6 +45,17 @@ def ingest(
         logger.error("arxiv unavailable: {}", exc)
         raise typer.Exit(code=1) from exc
 
+    if report.pages_fetched == 0:
+        # arXiv answers a mistyped category exactly as it answers a real empty one: 200,
+        # totalResults=0, no entries. The cause is not knowable here, so name the likely
+        # one and make the outcome loud rather than classify it wrongly.
+        logger.warning(
+            "arxiv returned no papers for {} — check the category codes against "
+            "https://arxiv.org/category_taxonomy",
+            ", ".join(category),
+        )
+        raise typer.Exit(code=1)
+
     logger.success(
         "done: {} pages, {} papers ({} new, {} updated, {} unchanged, {} embedded){}",
         report.pages_fetched,

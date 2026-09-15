@@ -23,9 +23,17 @@ async def read_papers_over_time(
     date_from: Annotated[date | None, Query(alias="from", description="Inclusive.")] = None,
     date_to: Annotated[date | None, Query(alias="to", description="Inclusive.")] = None,
 ) -> list[PeriodPoint]:
-    # The only check no single-field validator can express.
+    # The only check no single-field validator can express. Free, so it runs before
+    # the category lookup touches the database.
     if date_from is not None and date_to is not None and date_from > date_to:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_CONTENT, "`from` is after `to`")
+
+    if category is not None and not await analytics.category_exists(session, category):
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND,
+            f"no category {category!r} in this corpus — "
+            "see GET /stats/top-categories for what is loaded",
+        )
 
     return await analytics.papers_over_time(
         session,
