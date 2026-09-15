@@ -34,21 +34,37 @@ docker compose up --build     # database + migrations + API
 docker compose exec api paper ingest -c cs.AI -c cs.CL -c cs.LG
 
 curl -s 'localhost:8000/stats/top-categories?n=3'
-curl -s -X POST localhost:8000/ask -H 'content-type: application/json' \
-  -d '{"question": "How can LLM agents reuse experience from earlier tasks?"}'
+
+curl -s -X POST localhost:8000/ask -H 'Content-Type: application/json' \
+  -d '{"question": "How agent memory looked like in early stage of LLMs?"}'
 ```
 
-```console
-# responses
-
+```jsonc
+// GET /stats/top-categories?n=3
 [{"category": "cs.AI", "count": 622}, {"category": "cs.LG", "count": 606},
  {"category": "cs.CL", "count": 341}]
 
-{"answer": "LLM agents can reuse experience by extracting and storing reusable knowledge
-            from past interactions... (2609.12655)",
- "sources": [{"arxiv_id": "2609.12655", "title": "LifeMem: Enabling Lifelong Experience
-              Reuse for LLM Agents", "score": 0.841}, ...]}
+// POST /ask
+{
+  "answer": "Early-stage LLM agents relied on very simple, retrieval-augmented memory
+             systems. These were designed mainly to store and recall facts, perform
+             multi-hop retrieval, and track time-based changes, but they did not organize
+             knowledge into structured hierarchies such as ledgers, to-do lists, or
+             trees... (2602.11243).",
+  "sources": [
+    {"arxiv_id": "2602.11243", "title": "Evaluating Memory Structure in LLM Agents",
+     "score": 0.8432},
+    {"arxiv_id": "2609.12808", "title": "K-Bench: A Benchmark for LLM Unlearning in
+      Agentic Deployments", "score": 0.7756},
+    {"arxiv_id": "2609.12436", "title": "LifeFuse-Mem: Lifecycle-Aware State Fusion...",
+     "score": 0.7716}
+    // ... 2 more, down to 0.7674
+  ]
+}
 ```
+
+Every id in `sources` is a row that was joined, so it always resolves to a stored paper —
+and the answer cites them inline.
 
 > [!TIP]
 >
