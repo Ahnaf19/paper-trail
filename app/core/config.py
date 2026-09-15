@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     arxiv_min_request_interval: float = Field(default=3.0, ge=3.0)  # their floor, not ours to lower
     arxiv_max_retries: int = Field(default=5, ge=0)
     arxiv_timeout_seconds: float = Field(default=60.0, gt=0)
-    arxiv_user_agent: str = "pipeline-arxiv-assessment/0.1"
+    arxiv_user_agent: str = "paper-trail/0.1"
     arxiv_watermark_margin_days: int = Field(default=1, ge=0)  # covers page-boundary drift
 
     # Embeddings (PRD §6.2). The dimension is pinned in the schema, not here.

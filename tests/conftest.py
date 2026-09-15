@@ -10,7 +10,7 @@ from pathlib import Path
 # An environment variable would outrank .env, so only fall back when there is no .env
 # to respect -- otherwise the suite would silently ignore the developer's own database.
 if not Path(".env").exists():
-    os.environ.setdefault("DATABASE_URL", "postgresql://pipeline:pipeline@localhost:5432/pipeline")
+    os.environ.setdefault("DATABASE_URL", "postgresql://arxiv:arxiv@localhost:5432/arxiv")
 os.environ.setdefault("LOG_LEVEL", "INFO")
 
 import pytest
@@ -27,7 +27,7 @@ from app.dependencies import get_session
 from app.main import app
 from tests.helpers import KeywordEmbedder, StubLLM
 
-TEST_DB = "pipeline_test"
+TEST_DB = "arxiv_test"
 TABLES = "paper, author, category, paper_author, paper_category, embedding, ingest_state"
 
 

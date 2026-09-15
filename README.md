@@ -1,14 +1,14 @@
-# arXiv corpus — ingest, aggregate, ask
+# paper-trail
 
 A CLI that ingests arXiv papers into PostgreSQL, and one FastAPI service that both serves
 aggregations computed in SQL and answers natural-language questions grounded in the stored
-abstracts.
+abstracts — every answer carrying a trail back to the papers it came from.
 
 ```
   arXiv Atom API                      [ external ]
        │   1 request / 3s · exponential backoff on 429
        ▼
-  pipeline ingest      fetch ▸ parse ▸ upsert ▸ embed        one transaction per page
+  paper ingest         fetch ▸ parse ▸ upsert ▸ embed        one transaction per page
        │
        ▼
   PostgreSQL + pgvector                                      papers · authors · categories
@@ -33,7 +33,7 @@ cp .env.example .env          # then put a Groq key in LLM_API_KEY — see Confi
 docker compose up --build     # database + migrations + API
 
 # in another terminal: load the corpus (~2 minutes for 1,200 papers)
-docker compose exec api pipeline ingest -c cs.AI -c cs.CL -c cs.LG
+docker compose exec api paper ingest -c cs.AI -c cs.CL -c cs.LG
 
 curl -s localhost:8000/stats/top-categories?n=5
 ```
@@ -49,8 +49,8 @@ Everything is an environment variable; nothing is hardcoded. `.env.example` list
 
 | Variable | Default | Notes |
 |---|---|---|
-| `POSTGRES_USER` / `_PASSWORD` / `_DB` | `pipeline` | Used by the database container. |
-| `DATABASE_URL` | `…@localhost:5432/pipeline` | For running the CLI **from your host**. The API container overrides it to reach `db` on the compose network. |
+| `POSTGRES_USER` / `_PASSWORD` / `_DB` | `arxiv` | Used by the database container. |
+| `DATABASE_URL` | `…@localhost:5432/arxiv` | For running the CLI **from your host**. The API container overrides it to reach `db` on the compose network. |
 | `LLM_API_KEY` | — | 🔴 The only value you must supply. Free at [console.groq.com/keys](https://console.groq.com/keys), no card. |
 | `LLM_BASE_URL` | `https://api.groq.com/openai/v1` | Any OpenAI-compatible endpoint. |
 | `LLM_MODEL` | `openai/gpt-oss-20b` | Tested 15 Sep 2026 — see the warning under `/ask`. |
@@ -67,9 +67,9 @@ and retrieval are unaffected.
 ## Ingesting papers
 
 ```bash
-docker compose exec api pipeline ingest -c cs.AI -c cs.CL -c cs.LG   # default --max 1100
-docker compose exec api pipeline ingest -c cs.AI --full              # ignore the watermark
-docker compose exec api pipeline wipe                                # delete everything
+docker compose exec api paper ingest -c cs.AI -c cs.CL -c cs.LG   # default --max 1100
+docker compose exec api paper ingest -c cs.AI --full              # ignore the watermark
+docker compose exec api paper wipe                                # delete everything
 ```
 
 **Re-running is safe and cheap.** Papers are upserted on `arxiv_id`, so a second run creates
@@ -90,7 +90,7 @@ transaction handling for zero throughput.
 ```
 app/
   main.py            FastAPI app: lifespan, routers, exception handlers
-  cli.py             `pipeline ingest` / `pipeline wipe`
+  cli.py             `paper ingest` / `paper wipe`
   dependencies.py    FastAPI dependencies and the annotated aliases routers use
   core/              config (pydantic-settings) · logging (loguru) · errors + handlers
   db/                engines and session factories
@@ -354,7 +354,7 @@ These are deliberate, and stated rather than hidden.
   case is a wrong answer, never an action.
 - **No ANN index on the vectors.** Exact search over 1,200 vectors is 7.6 ms. An index would
   trade recall for microseconds; it starts to earn its place around 100k rows.
-- **The corpus is a snapshot.** `pipeline ingest` re-run picks up new and revised papers via
+- **The corpus is a snapshot.** `paper ingest` re-run picks up new and revised papers via
   the watermark, but nothing schedules it.
 
 ## What I would do with more time
@@ -373,7 +373,7 @@ Roughly in the order I would pick them up.
 4. **A read-only database role for the API.** Both read paths only `SELECT`, but they connect
    as the owner. Splitting the roles is the real hardening step and costs almost nothing.
 5. **Re-embed in batches as a separate command.** Changing the embedding model currently
-   means re-running ingest; a `pipeline reembed` working purely from stored text would be
+   means re-running ingest; a `paper reembed` working purely from stored text would be
    clearer and would not touch arXiv at all.
 6. **Harden against prompt injection beyond the architectural bound.** Today the model has
    no tools, so the worst case is a wrong answer. If it ever gained tools, the delimiting and

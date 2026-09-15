@@ -1,5 +1,5 @@
 [project]
-name = "pipeline"
+name = "paper-trail"
 version = "0.1.0"
 description = "Ingest arXiv papers into Postgres, serve SQL aggregates, and answer questions over the abstracts with RAG."
 readme = "README.md"
@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [project.scripts]
-pipeline = "app.cli:app"
+paper = "app.cli:app"
 
 [dependency-groups]
 dev = [

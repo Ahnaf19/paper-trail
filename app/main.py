@@ -15,7 +15,7 @@ from app.services.llm import OpenAICompatibleClient
 
 DESCRIPTION = """
 Aggregations over a corpus of arXiv papers, computed in SQL, plus a grounded question
-answering endpoint over their abstracts. Papers are loaded by the `pipeline ingest` CLI.
+answering endpoint over their abstracts. Papers are loaded by the `paper ingest` CLI.
 """
 
 

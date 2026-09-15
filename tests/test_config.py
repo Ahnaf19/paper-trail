@@ -6,7 +6,7 @@ from pydantic import ValidationError
 
 from app.core.config import Settings
 
-DSN = "postgresql://user:pw@db:5432/pipeline"
+DSN = "postgresql://user:pw@db:5432/arxiv"
 
 
 def test_sync_url_uses_psycopg():
@@ -20,21 +20,21 @@ def test_async_url_uses_asyncpg():
 def test_both_urls_keep_credentials_host_and_database():
     settings = Settings(database_url=DSN)
     for url in (settings.sync_database_url, settings.async_database_url):
-        assert url.endswith("@db:5432/pipeline")
+        assert url.endswith("@db:5432/arxiv")
         assert "user:pw" in url
 
 
 def test_existing_driver_is_replaced_not_stacked():
-    settings = Settings(database_url="postgresql+asyncpg://user:pw@db:5432/pipeline")
+    settings = Settings(database_url="postgresql+asyncpg://user:pw@db:5432/arxiv")
     assert settings.sync_database_url.startswith("postgresql+psycopg://")
     assert "asyncpg" not in settings.sync_database_url
 
 
 def test_postgres_scheme_is_normalised_to_postgresql():
     """Some providers hand out `postgres://`, which SQLAlchemy 2.0 does not accept."""
-    settings = Settings(database_url="postgres://user:pw@db:5432/pipeline")
-    assert settings.sync_database_url == "postgresql+psycopg://user:pw@db:5432/pipeline"
-    assert settings.async_database_url == "postgresql+asyncpg://user:pw@db:5432/pipeline"
+    settings = Settings(database_url="postgres://user:pw@db:5432/arxiv")
+    assert settings.sync_database_url == "postgresql+psycopg://user:pw@db:5432/arxiv"
+    assert settings.async_database_url == "postgresql+asyncpg://user:pw@db:5432/arxiv"
 
 
 def test_invalid_log_level_is_rejected_at_construction():
