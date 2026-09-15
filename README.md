@@ -422,18 +422,32 @@ Roughly in the order I would pick them up.
    rate-limited by arXiv (429 on every uncached request), so the 1,200-paper corpus was
    captured once through a VPN and replayed locally through the real client. Every stage is
    exercised, but a long live multi-page run has not been.
-2. **Schedule the ingest.** The incremental path is built and cheap — a re-run with nothing
+2. **Measure retrieval quality.** Nothing here measures whether the *right* papers come
+   back — only how fast they come back and how their scores distribute. I would build a
+   known-item set (question → the one `arxiv_id` that answers it) and report **recall@k** and
+   **MRR**; not precision@k, which is meaningless against single-label ground truth. The
+   sample has to be **stratified by category** — four categories hold 68% of this corpus, so
+   a uniform sample would only test retrieval where it is densest. That settles two numbers I
+   currently defend as conventions rather than findings: `RETRIEVAL_TOP_K = 5`, and how often
+   `RELEVANCE_THRESHOLD` refuses a question the corpus could actually have answered.
+3. **Measure groundedness, and then enforce it.** Today nothing verifies the answer after
+   generation — the grounded prompt is an instruction, not an assertion. The standard
+   decomposition is context relevance, **faithfulness**, and answer relevance; faithfulness is
+   the one that closes this gap, by splitting an answer into claims and checking each against
+   the retrieved context (NLI entailment, or LLM-as-judge with its agreement spot-checked).
+   Measured first, then turned into a gate that refuses below a bar.
+4. **Schedule the ingest.** The incremental path is built and cheap — a re-run with nothing
    new costs one throttled request per page — but nothing triggers it. A cron container or
    an external scheduler is a small change.
-3. **Gap-fill the time series behind a flag.** Periods with no papers are currently omitted.
+5. **Gap-fill the time series behind a flag.** Periods with no papers are currently omitted.
    That is honest, but a `?fill=true` using `generate_series` would suit some charts better.
-4. **A read-only database role for the API.** Both read paths only `SELECT`, but they connect
+6. **A read-only database role for the API.** Both read paths only `SELECT`, but they connect
    as the owner. Splitting the roles is the real hardening step and costs almost nothing.
-5. **Re-embed in batches as a separate command.** Changing the embedding model currently
+7. **Re-embed in batches as a separate command.** Changing the embedding model currently
    means re-running ingest; a `paper reembed` working purely from stored text would be
    clearer and would not touch arXiv at all.
-6. **Harden against prompt injection beyond the architectural bound.** Today the model has
+8. **Harden against prompt injection beyond the architectural bound.** Today the model has
    no tools, so the worst case is a wrong answer. If it ever gained tools, the delimiting and
    the system prompt alone would not be enough, and this would need real work.
-7. **An ANN index, once measured.** Exact search is 7.8 ms over 1,200 vectors. At ~100k it
+9. **An ANN index, once measured.** Exact search is 7.8 ms over 1,200 vectors. At ~100k it
    would be worth benchmarking HNSW against the recall it costs — but not before.
