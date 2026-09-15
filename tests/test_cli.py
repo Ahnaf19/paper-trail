@@ -61,4 +61,4 @@ def test_no_category_explains_what_to_type(report):
     assert "--category / -c is required" in result.stderr
     assert "paper ingest -c cs.AI -c cs.CL" in result.stderr  # a copyable example
     assert "arxiv.org/category_taxonomy" in result.stderr  # where codes come from
-    assert "all categories" in result.stderr  # why there is no default
+    assert "no documented 'everything' query" in result.stderr  # why there is no default
