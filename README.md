@@ -422,20 +422,14 @@ Roughly in the order I would pick them up.
    rate-limited by arXiv (429 on every uncached request), so the 1,200-paper corpus was
    captured once through a VPN and replayed locally through the real client. Every stage is
    exercised, but a long live multi-page run has not been.
-2. **Measure retrieval quality.** Nothing here measures whether the *right* papers come
-   back — only how fast they come back and how their scores distribute. I would build a
-   known-item set (question → the one `arxiv_id` that answers it) and report **recall@k** and
-   **MRR**; not precision@k, which is meaningless against single-label ground truth. The
-   sample has to be **stratified by category** — four categories hold 68% of this corpus, so
-   a uniform sample would only test retrieval where it is densest. That settles two numbers I
-   currently defend as conventions rather than findings: `RETRIEVAL_TOP_K = 5`, and how often
-   `RELEVANCE_THRESHOLD` refuses a question the corpus could actually have answered.
-3. **Measure groundedness, and then enforce it.** Today nothing verifies the answer after
-   generation — the grounded prompt is an instruction, not an assertion. The standard
-   decomposition is context relevance, **faithfulness**, and answer relevance; faithfulness is
-   the one that closes this gap, by splitting an answer into claims and checking each against
-   the retrieved context (NLI entailment, or LLM-as-judge with its agreement spot-checked).
-   Measured first, then turned into a gate that refuses below a bar.
+2. **Measure retrieval quality.** Nothing checks whether the *right* papers come back. A
+   known-item set gives **recall@k** and **MRR** — not precision@k, meaningless on
+   single-label ground truth — stratified by category, since four hold 68% of the corpus.
+   Would settle `RETRIEVAL_TOP_K = 5` and how often the threshold over-refuses.
+3. **Measure groundedness, then enforce it.** The grounded prompt is an instruction, not an
+   assertion — nothing checks the answer after generation. **Faithfulness** (split the answer
+   into claims, check each against the context) is the metric that closes that gap, and the
+   gate that should follow it.
 4. **Schedule the ingest.** The incremental path is built and cheap — a re-run with nothing
    new costs one throttled request per page — but nothing triggers it. A cron container or
    an external scheduler is a small change.
