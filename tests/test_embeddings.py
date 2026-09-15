@@ -4,9 +4,9 @@ from datetime import timedelta
 
 from sqlalchemy import func, select
 
-from pipeline.embeddings import content_hash, embedding_text, refresh_embeddings
-from pipeline.models import Embedding, Paper
-from pipeline.upsert import upsert_papers
+from app.models import Embedding, Paper
+from app.services.embeddings import content_hash, embedding_text, refresh_embeddings
+from app.services.upsert import upsert_papers
 from tests.helpers import DEFAULT_TIME as NOW
 from tests.helpers import FakeEmbedder, make_paper
 

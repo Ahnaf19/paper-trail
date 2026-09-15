@@ -1,6 +1,6 @@
 """Shared test setup.
 
-`pipeline.config` validates at import, so the environment must be set before any test
+`app.core.config` validates at import, so the environment must be set before any test
 module imports it. Real environment variables still win — this only fills the gaps.
 """
 
@@ -14,7 +14,6 @@ if not Path(".env").exists():
 os.environ.setdefault("LOG_LEVEL", "INFO")
 
 import pytest
-from alembic import command
 from alembic.config import Config
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
@@ -22,9 +21,10 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from sqlalchemy.orm import Session, sessionmaker
 from sqlalchemy.pool import NullPool
 
-from pipeline.api.app import app
-from pipeline.config import settings
-from pipeline.db import get_session
+from alembic import command
+from app.core.config import settings
+from app.dependencies import get_session
+from app.main import app
 from tests.helpers import KeywordEmbedder, StubLLM
 
 TEST_DB = "pipeline_test"

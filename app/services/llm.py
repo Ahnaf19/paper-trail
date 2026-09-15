@@ -5,11 +5,8 @@ from typing import Protocol
 import httpx
 from loguru import logger
 
-from pipeline.config import settings
-
-
-class LLMUnavailableError(RuntimeError):
-    """The model could not be reached or refused the request. Carries no provider detail."""
+from app.core.config import settings
+from app.core.errors import LLMUnavailableError
 
 
 class LLMClient(Protocol):

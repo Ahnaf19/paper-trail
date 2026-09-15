@@ -25,7 +25,7 @@ RUN uv sync --no-dev
 # cache is by construction the directory the app reads. DATABASE_URL is required at import
 # and unused here: settings are validated on import, no connection is opened.
 RUN DATABASE_URL=postgresql://build:build@localhost/build \
-    python -c "from pipeline.embeddings import FastEmbedEmbedder; FastEmbedEmbedder().embed_query('warm')"
+    python -c "from app.services.embeddings import FastEmbedEmbedder; FastEmbedEmbedder().embed_query('warm')"
 
 RUN useradd --create-home --uid 10001 app && chown -R app:app /app /opt/models
 USER app

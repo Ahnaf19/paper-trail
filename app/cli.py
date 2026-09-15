@@ -6,11 +6,11 @@ import typer
 from loguru import logger
 from sqlalchemy import text
 
-from pipeline.arxiv_client import ArxivUnavailableError
-from pipeline.db import SessionLocal
-from pipeline.ingest import run_ingest
-from pipeline.logging import configure_logging
-from pipeline.models import Base
+from app.core.errors import ArxivUnavailableError
+from app.core.logging import configure_logging
+from app.db.session import SessionLocal
+from app.models import Base
+from app.services.ingest import run_ingest
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 

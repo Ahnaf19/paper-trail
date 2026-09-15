@@ -8,8 +8,8 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from pipeline.config import settings
-from pipeline.models import Embedding, Paper
+from app.core.config import settings
+from app.models import Embedding, Paper
 
 
 def embedding_text(title: str, abstract: str) -> str:

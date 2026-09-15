@@ -7,12 +7,12 @@ from datetime import datetime
 from loguru import logger
 from sqlalchemy.orm import Session
 
-from pipeline.arxiv_client import ArxivClient, build_query
-from pipeline.arxiv_parser import parse_feed
-from pipeline.db import SessionLocal
-from pipeline.embeddings import Embedder, FastEmbedEmbedder, refresh_embeddings
-from pipeline.upsert import upsert_papers
-from pipeline.watermark import (
+from app.db.session import SessionLocal
+from app.services.arxiv_client import ArxivClient, build_query
+from app.services.arxiv_parser import parse_feed
+from app.services.embeddings import Embedder, FastEmbedEmbedder, refresh_embeddings
+from app.services.upsert import upsert_papers
+from app.services.watermark import (
     categories_key,
     page_is_older_than,
     read_watermark,

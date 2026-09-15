@@ -5,7 +5,7 @@ from typing import Final
 
 from loguru import logger
 
-from pipeline.config import settings
+from app.core.config import settings
 
 _FORMAT: Final = (
     "<green>{time:YYYY-MM-DD HH:mm:ss.SSS}</green> | "

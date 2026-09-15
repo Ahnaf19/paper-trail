@@ -4,9 +4,9 @@ from datetime import UTC, datetime
 
 import pytest
 
-from pipeline.api.app import app
-from pipeline.db import get_session
-from pipeline.upsert import upsert_papers
+from app.dependencies import get_session
+from app.main import app
+from app.services.upsert import upsert_papers
 from tests.helpers import make_paper
 
 

@@ -6,9 +6,9 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from pipeline.arxiv_parser import ArxivPaper
-from pipeline.config import settings
-from pipeline.models import IngestState
+from app.core.config import settings
+from app.models import IngestState
+from app.services.arxiv_parser import ArxivPaper
 
 
 def categories_key(categories: list[str]) -> str:

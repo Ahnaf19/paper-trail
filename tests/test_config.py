@@ -4,7 +4,7 @@ DATABASE_URL — so that is what these tests cover."""
 import pytest
 from pydantic import ValidationError
 
-from pipeline.config import Settings
+from app.core.config import Settings
 
 DSN = "postgresql://user:pw@db:5432/pipeline"
 

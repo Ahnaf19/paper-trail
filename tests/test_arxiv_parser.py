@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from pipeline.arxiv_parser import parse_feed
+from app.services.arxiv_parser import parse_feed
 
 FIXTURES = Path(__file__).parent / "fixtures"
 LIVE = FIXTURES / "arxiv_page.xml"  # real capture, 50 entries

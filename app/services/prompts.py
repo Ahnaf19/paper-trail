@@ -2,7 +2,7 @@
 
 from collections.abc import Sequence
 
-from pipeline.retrieval import RetrievedPaper
+from app.services.retrieval import RetrievedPaper
 
 SYSTEM_PROMPT = """\
 You answer questions about arXiv papers using ONLY the abstracts provided below.

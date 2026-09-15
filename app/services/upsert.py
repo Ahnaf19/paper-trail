@@ -7,8 +7,8 @@ from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
-from pipeline.arxiv_parser import ArxivPaper
-from pipeline.models import Author, Category, Paper, PaperAuthor, PaperCategory
+from app.models import Author, Category, Paper, PaperAuthor, PaperCategory
+from app.schemas.arxiv import ArxivPaper
 
 
 @dataclass

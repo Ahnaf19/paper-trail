@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime, timedelta
 
-from pipeline.watermark import (
+from app.services.watermark import (
     categories_key,
     page_is_older_than,
     read_watermark,

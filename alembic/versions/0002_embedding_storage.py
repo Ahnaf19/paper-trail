@@ -3,11 +3,12 @@
 from collections.abc import Sequence
 
 import sqlalchemy as sa
-from alembic import op
 
 # Autogenerate emits `pgvector.sqlalchemy.vector.VECTOR(...)` but never this import,
 # so the generated file raises NameError. Custom column types are its known blind spot.
 from pgvector.sqlalchemy import Vector
+
+from alembic import op
 
 revision: str = "0002"
 down_revision: str | Sequence[str] | None = "0001"

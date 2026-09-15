@@ -7,16 +7,13 @@ from typing import Final
 import httpx
 from loguru import logger
 
-from pipeline.config import settings
+from app.core.config import settings
+from app.core.errors import ArxivUnavailableError
 
 _BACKOFF_BASE_SECONDS: Final = 2.0
 _RETRYABLE_STATUS: Final = frozenset({429, 500, 502, 503, 504})
 # The caller breaks out of iter_pages; this only stops a runaway loop if it forgets.
 _MAX_PAGES: Final = 500
-
-
-class ArxivUnavailableError(RuntimeError):
-    """arXiv could not be reached within the configured retries."""
 
 
 def build_query(categories: list[str]) -> str:

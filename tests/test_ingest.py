@@ -5,10 +5,10 @@ from datetime import timedelta
 
 from sqlalchemy import func, select
 
-from pipeline.arxiv_parser import ArxivPaper
-from pipeline.ingest import run_ingest
-from pipeline.models import Paper
-from pipeline.watermark import categories_key, read_watermark, save_watermark
+from app.models import Paper
+from app.services.arxiv_parser import ArxivPaper
+from app.services.ingest import run_ingest
+from app.services.watermark import categories_key, read_watermark, save_watermark
 from tests.helpers import DEFAULT_TIME as NOW
 from tests.helpers import make_paper
 

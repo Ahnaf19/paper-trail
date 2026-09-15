@@ -2,10 +2,10 @@
 
 import pytest
 
-from pipeline.config import settings
-from pipeline.embeddings import refresh_embeddings
-from pipeline.llm import LLMUnavailableError
-from pipeline.upsert import upsert_papers
+from app.core.config import settings
+from app.core.errors import LLMUnavailableError
+from app.services.embeddings import refresh_embeddings
+from app.services.upsert import upsert_papers
 from tests.helpers import make_paper
 
 PAPERS = [

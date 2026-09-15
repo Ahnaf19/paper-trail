@@ -4,8 +4,8 @@ import hashlib
 import random
 from datetime import UTC, datetime
 
-from pipeline.arxiv_parser import ArxivPaper
-from pipeline.models import EMBEDDING_DIMENSIONS
+from app.models import EMBEDDING_DIMENSIONS
+from app.schemas.arxiv import ArxivPaper
 
 DEFAULT_TIME = datetime(2026, 9, 1, 12, 0, tzinfo=UTC)
 

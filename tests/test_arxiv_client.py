@@ -3,8 +3,8 @@
 import httpx
 import pytest
 
-from pipeline.arxiv_client import ArxivClient, ArxivUnavailableError, build_query
-from pipeline.config import settings
+from app.core.config import settings
+from app.services.arxiv_client import ArxivClient, ArxivUnavailableError, build_query
 
 FEED = '<?xml version="1.0"?><feed xmlns="http://www.w3.org/2005/Atom"></feed>'
 
@@ -18,7 +18,7 @@ def _client(handler) -> ArxivClient:
 def _no_real_sleeping(monkeypatch):
     """Assert on the delays rather than serving them — the suite must stay fast."""
     slept: list[float] = []
-    monkeypatch.setattr("pipeline.arxiv_client.time.sleep", slept.append)
+    monkeypatch.setattr("app.services.arxiv_client.time.sleep", slept.append)
     return slept
 
 

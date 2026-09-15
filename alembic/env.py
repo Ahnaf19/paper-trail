@@ -2,11 +2,11 @@
 
 from logging.config import fileConfig
 
-from alembic import context
 from sqlalchemy import engine_from_config, pool
 
-from pipeline.config import settings
-from pipeline.models import Base
+from alembic import context
+from app.core.config import settings
+from app.models import Base
 
 config = context.config
 

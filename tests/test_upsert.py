@@ -4,8 +4,8 @@ from datetime import timedelta
 
 from sqlalchemy import func, select
 
-from pipeline.models import Author, Category, Paper, PaperAuthor, PaperCategory
-from pipeline.upsert import upsert_papers
+from app.models import Author, Category, Paper, PaperAuthor, PaperCategory
+from app.services.upsert import upsert_papers
 from tests.helpers import DEFAULT_TIME as NOW
 from tests.helpers import make_paper
 

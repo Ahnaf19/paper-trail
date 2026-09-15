@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from pipeline.models import Embedding, Paper
+from app.models import Embedding, Paper
 
 
 @dataclass(frozen=True)
