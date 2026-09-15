@@ -85,6 +85,35 @@ Ingestion is deliberately **synchronous**. arXiv's Terms of Use require "a singl
 at a time", so there is no concurrency to win; async here would add ceremony and trickier
 transaction handling for zero throughput.
 
+## Project layout
+
+```
+app/
+  main.py            FastAPI app: lifespan, routers, exception handlers
+  cli.py             `pipeline ingest` / `pipeline wipe`
+  dependencies.py    FastAPI dependencies and the annotated aliases routers use
+  core/              config (pydantic-settings) · logging (loguru) · errors + handlers
+  db/                engines and session factories
+  models/            SQLAlchemy ORM — the schema's source of truth
+  schemas/           Pydantic models for anything crossing a boundary (HTTP, or XML)
+  routers/           HTTP only: validate, delegate, shape the response
+  services/          everything the application actually does — no FastAPI imports here
+  utils/             small helpers with no domain knowledge
+alembic/versions/    migrations, generated from `app/models` and read before committing
+tests/               pytest — no network, no LLM, no model download
+```
+
+The line that matters is **`routers/` vs `services/`**. A router validates input and calls a
+service; the service does the work and knows nothing about HTTP. That is what lets the
+aggregation queries and the question-answering flow be tested directly, and it keeps status
+codes out of business logic — `qa.answer_question` returns a result with a `degraded` flag,
+and the router decides that means 503.
+
+The same split runs through ingestion: `arxiv_client` knows HTTP and nothing about Atom,
+`arxiv_parser` knows Atom and nothing about the database, `upsert` knows the database and has
+never seen a URL. That is why the parser can be tested against a saved XML fixture with no
+network at all.
+
 ## Schema
 
 ```
@@ -294,6 +323,21 @@ scan over a few thousand rows, and an index added without a measurement is decor
 The join tables are where one would first earn its place — roughly above 100k link rows,
 or ~50,000 papers.
 
+## Tests
+
+```bash
+uv sync && uv run pytest        # needs a local Postgres; see below
+```
+
+100 tests. They **never touch the network, an LLM, or download a model** — the embedding
+provider and the LLM client both sit behind small interfaces, and the suite injects fakes
+before the app starts. The test database is created and migrated by the real Alembic
+migrations, so the schema under test is the schema that ships.
+
+They are aimed at what would actually break: XML parsing against a saved real capture,
+idempotent re-ingest, staleness detection, aggregation counts on seeded data, and the
+no-good-match path.
+
 ## Known limitations
 
 These are deliberate, and stated rather than hidden.
@@ -312,21 +356,6 @@ These are deliberate, and stated rather than hidden.
   trade recall for microseconds; it starts to earn its place around 100k rows.
 - **The corpus is a snapshot.** `pipeline ingest` re-run picks up new and revised papers via
   the watermark, but nothing schedules it.
-
-## Tests
-
-```bash
-uv sync && uv run pytest        # needs a local Postgres; see below
-```
-
-100 tests. They **never touch the network, an LLM, or download a model** — the embedding
-provider and the LLM client both sit behind small interfaces, and the suite injects fakes
-before the app starts. The test database is created and migrated by the real Alembic
-migrations, so the schema under test is the schema that ships.
-
-They are aimed at what would actually break: XML parsing against a saved real capture,
-idempotent re-ingest, staleness detection, aggregation counts on seeded data, and the
-no-good-match path.
 
 ## What I would do with more time
 
