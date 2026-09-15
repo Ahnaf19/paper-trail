@@ -43,14 +43,13 @@ def ingest(
         paper ingest -c cs.AI
         paper ingest -c cs.AI -c cs.CL -c cs.LG --max 1100
     """
-    # Typer's own "Missing option" names what is absent but not what to type instead, and
-    # this is the one flag with no sane default -- omitting it would mean walking all of
-    # arXiv. Usage errors go to stderr as plain text, the way typer's own do, not to loguru.
+    # Typer's own "Missing option" names what is absent but not what to type instead.
+    # Usage errors go to stderr as plain text, the way typer's own do, not to loguru.
     if not category:
         typer.secho("Error: at least one --category / -c is required.", fg="red", err=True)
         typer.secho(
-            "\nThere is no 'all categories' mode — arXiv needs a query, and defaulting to\n"
-            "everything would silently start a walk over ~2.4 million papers.\n"
+            "\nThe query is built from `cat:` clauses, so with no category there is no\n"
+            "search_query to send — arXiv has no documented 'everything' query.\n"
             "\n  paper ingest -c cs.AI\n"
             "  paper ingest -c cs.AI -c cs.CL -c cs.LG\n"
             "\nValid codes:   https://arxiv.org/category_taxonomy\n"

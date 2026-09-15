@@ -74,8 +74,9 @@ docker compose exec api paper wipe                                # delete every
 
 The limit is checked _after_ each page commits, and pages are 200 — so page 6 crosses 1,100 and stops at 1,200. 1,100 rather than 1,000 is headroom over the brief's "at least 1,000".
 
-- **`-c` is required and repeatable.** There is no "all categories" mode — omitting it
-  exits 2 with an example to copy. Valid codes:
+- **`-c` is required and repeatable.** The query is assembled from `cat:` clauses, so with
+  no category there is no `search_query` to send — arXiv has no "everything" query. Omitting
+  it exits 2 with an example to copy. Valid codes:
   [arXiv's taxonomy](https://arxiv.org/category_taxonomy). Loaded ones:
   `GET /stats/top-categories?n=100` — the default run spans 92.
 - **Re-running is safe and cheap.** Papers upsert on `arxiv_id` — a database constraint, not application logic. Sorted by last-update descending, so one high-water mark catches new _and_ revised papers; the scan stops once a whole page predates the mark.
