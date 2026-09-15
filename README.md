@@ -5,7 +5,7 @@ aggregations computed in SQL and answers natural-language questions grounded in 
 abstracts — _**every answer carrying a trail back to the papers it came from.**_
 
 ```
-  arXiv Atom API                      [ external ]
+  arXiv Atom API                                             [ external ]
        │   1 request / 3s · exponential backoff on 429
        ▼
   paper ingest         fetch ▸ parse ▸ upsert ▸ embed        one transaction per page
@@ -287,13 +287,13 @@ The third group is the useless test: separating arXiv from sourdough is trivial.
 Every off-topic question and 4 of 5 adjacent ones — and leaves the residue to gate 2.
 Pushing it above 0.799 would also refuse 8 of the 12 questions the corpus genuinely answers.
 
-**Why 0.71 and not 0.73.** Every value in the gap `(0.687, 0.745]` behaves *identically* on
+**Why 0.71 and not 0.73.** Every value in the gap `(0.687, 0.745]` behaves _identically_ on
 all 23 questions, so the evidence does not pick one — the choice is only about which side
 gets the margin. The two errors are not symmetric:
 
-| Set too low | Set too high |
-|---|---|
-| one wasted LLM call | a real question refused |
+| Set too low               | Set too high                    |
+| ------------------------- | ------------------------------- |
+| one wasted LLM call       | a real question refused         |
 | gate 2 usually catches it | **no second gate on this side** |
 
 So the margin leans low. 0.71 leaves **0.035** under the answerable floor against **0.023**
@@ -357,10 +357,13 @@ Computed **in this process** by [`fastembed`](https://github.com/qdrant/fastembe
 ## Tests
 
 ```bash
-uv sync && uv run pytest        # needs a local Postgres; see below
+cp .env.example .env       # if you have not already
+docker compose up -d db    # Postgres + pgvector on :5432 — the only prerequisite
+uv sync && uv run pytest
 ```
 
-- 100 tests that **never touch the network, an LLM, or download a model**
+- 108 tests that **never touch the network, an LLM, or download a model**
+- They run against a throwaway `arxiv_test` database, so your corpus is untouched.
 - The embedding provider and the LLM client both sit behind small interfaces, and the suite injects fakes before the app starts.
 - The test database is created and migrated by the real Alembic migrations, so the schema under test is the schema that ships.
 - They are aimed at what would actually break: XML parsing against a saved real capture,
