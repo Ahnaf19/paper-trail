@@ -64,6 +64,27 @@ Everything is an environment variable; nothing is hardcoded. `.env.example` list
 the retrieved papers with an explicit message instead of an answer. Aggregations, ingestion
 and retrieval are unaffected.
 
+### Embeddings run locally — there is no embedding API key
+
+`LLM_API_KEY` is for *generation* only. Embeddings are computed **in this process**, by
+[`fastembed`](https://github.com/qdrant/fastembed) running `BAAI/bge-small-en-v1.5` on ONNX
+Runtime — a library, not a hosted service. No API key, no per-call cost, no rate limit, and
+no network at query time.
+
+| | |
+|---|---|
+| Model | `BAAI/bge-small-en-v1.5`, quantised ONNX · 384 dimensions |
+| On disk | **63 MB** of weights (~64 MB with the tokenizer) |
+| Runtime | ONNX Runtime — **no PyTorch**, which keeps the image small |
+| Where | Baked into the Docker image at build time (`EMBEDDING_CACHE_DIR=/opt/models`) |
+
+That last row is the point: the model is downloaded **once, during `docker build`**, so a
+running container never reaches out for weights. Outside Docker, `fastembed` downloads them
+on first use and caches them, which is why the very first local run is slower than the rest.
+
+The model is warmed during application startup rather than on the first request, so the cost
+is visible in the logs and gated by the container healthcheck.
+
 ## Ingesting papers
 
 ```bash
@@ -126,159 +147,134 @@ network at all.
 
 ## Schema
 
-```
-  paper                         author            category
-  ─────                         ──────            ────────
-  id            PK              id    PK          id    PK
-  arxiv_id      UNIQUE  ◄── identity for idempotent re-ingest
-  title                         name  UNIQUE      code  UNIQUE
-  abstract                         ▲                 ▲
-  primary_category                 │                 │
-  published     TIMESTAMPTZ        │                 │
-  updated       TIMESTAMPTZ  ◄── drives the watermark│
-  doi           NULL               │                 │
-  journal_ref   NULL               │                 │
-     ▲  ▲  ▲                       │                 │
-     │  │  └──── paper_author ──────┘                 │
-     │  │        (paper_id, author_id, position)      │
-     │  └─────── paper_category ──────────────────────┘
-     │           (paper_id, category_id)
-     │
-     └────────── embedding
-                 paper_id      PK/FK   ON DELETE CASCADE
-                 vector        VECTOR(384)
-                 content_hash  sha256(title + "\n" + abstract)
-                 model         which model produced it
+### How the tables relate
 
-  ingest_state — watermark, keyed by the sorted category set (see below)
+```
+                    ┌─────────────┐
+                    │  embedding  │   one vector per paper, same transaction
+                    └──────┬──────┘
+                           │ 1:1
+                    ┌──────┴──────┐
+        ┌───────────┤    paper    ├───────────┐
+        │           └─────────────┘           │
+   M:N  │ paper_author        paper_category  │  M:N
+        │ (+ author order)                    │
+  ┌─────┴─────┐                         ┌─────┴─────┐
+  │  author   │                         │ category  │
+  └───────────┘                         └───────────┘
+
+  ingest_state        standalone — one watermark per sorted category set
 ```
 
-Three details carry most of the design:
+### The columns
 
-- **`arxiv_id` is stored without its version suffix**, and is unique. That makes idempotent
-  re-ingest a constraint rather than a read-then-write check that can race.
-- **`content_hash` plus `model`** decide whether a paper needs re-embedding. A metadata-only
-  revision bumps `updated` but must not trigger a re-embed — and changing the embedding model
-  invalidates every row automatically, through the same mechanism.
+```
+paper
+  id                PK
+  arxiv_id          UNIQUE        ← version-stripped; the idempotency key
+  title             text
+  abstract          text
+  primary_category  text
+  published         timestamptz   ← what the time series buckets on
+  updated           timestamptz   ← what the watermark tracks
+  doi               nullable
+  journal_ref       nullable
+
+embedding
+  paper_id          PK, FK → paper  ON DELETE CASCADE
+  vector            vector(384)
+  content_hash      sha256(title + "\n" + abstract)   ← decides re-embedding
+  model             which model produced it            ← so does this
+  created_at        timestamptz
+
+author                          category
+  id      PK                      id    PK
+  name    UNIQUE                  code  UNIQUE
+
+paper_author                    paper_category
+  paper_id   PK, FK               paper_id     PK, FK
+  author_id  PK, FK               category_id  PK, FK
+  position   smallint
+
+ingest_state
+  id                PK
+  categories_key    UNIQUE        ← sorted set, e.g. "cs.AI|cs.CL|cs.LG"
+  watermark         timestamptz
+```
+
+### Why it looks like this
+
+- **`arxiv_id` is stored without its version suffix, and is unique.** That makes idempotent
+  re-ingest a database constraint rather than a read-then-write check that can race.
+- **`content_hash` + `model` decide re-embedding.** A metadata-only revision bumps `updated`
+  but must not trigger a re-embed — and changing the embedding model invalidates every row
+  automatically, through the same mechanism rather than a separate migration.
 - **The watermark is keyed by the category set.** Ingest `cs.AI` alone, then re-run adding
-  `cs.LG`, and a naive watermark would stop early and silently skip every `cs.LG` paper older
-  than the mark — a successful-looking run with a large hole in it. A key mismatch forces a
-  full scan instead.
+  `cs.LG`, and a shared watermark would stop early and silently skip every `cs.LG` paper
+  older than the mark — a successful-looking run with a large hole in it. A key mismatch
+  forces a full scan instead.
+- **Embeddings are written in the same transaction as the paper.** A crash between storing a
+  paper and storing its vector is not handled; it is impossible. That is the whole reason
+  pgvector was chosen over a separate vector store — a separate store reintroduces a
+  dual-write problem that transactions no longer cover.
 
-**Embeddings are written in the same transaction as the paper.** A crash between storing a
-paper and storing its vector is not handled; it is impossible. That is the whole reason
-pgvector was chosen over a separate vector store — a separate store reintroduces a dual-write
-problem that migrations and transactions would no longer cover.
+### No indexes beyond the primary and unique keys
 
-## Aggregation API
+Deliberate, and measured rather than assumed. Every plan is a sequential scan:
 
-Three endpoints, not one `?metric=` endpoint: a time series and a top-N list are genuinely
-different shapes, and splitting them gives a better OpenAPI document and a simpler client.
-Every count is computed by Postgres with `GROUP BY` — **the API never contacts arXiv**, and
-answers with the network disconnected.
+| Query | Plan | Execution |
+|---|---|---|
+| `top-categories` | seq scan + hash join + top-N heapsort | **1.9 ms** |
+| `papers-over-time` | seq scan ×3 + group aggregate | **8.5 ms** |
+| `/ask` retrieval, top-5 of 1,200 vectors | seq scan + top-N heapsort | **7.8 ms** |
 
-Interactive docs are at `/docs` once the service is running.
+**For the aggregations, a seq scan is the correct plan, not a tolerated one.** An index buys
+*selectivity*, and a `GROUP BY` over the whole corpus has none — Postgres must read every row
+whatever the access path.
 
-### `GET /stats/papers-over-time`
+**For vector search an index genuinely would be faster**, and that is the interesting case.
+Building an HNSW index over the same 1,200 vectors:
 
-Paper counts per period and category.
+| | Exact (today) | HNSW |
+|---|---|---|
+| Execution | 7.8 ms | **0.6 ms** |
+| Result | exact nearest neighbours | **approximate** |
+| Index size | — | 2408 kB, against a 2400 kB table |
 
-| Param | Type | Default | Notes |
-|---|---|---|---|
-| `granularity` | `month` \| `year` | `month` | Anything else is a 422. |
-| `category` | string | all | Restrict to one category, e.g. `cs.LG`. A code the corpus does not hold is a **404**, not an empty list — see below. |
-| `from`, `to` | `YYYY-MM-DD` | unbounded | **Inclusive** of both days, resolved in UTC. |
+So it is ~12× faster — and still the wrong trade here. Those 7 ms sit inside a request whose
+LLM call takes 1–3 **seconds**: the saving is roughly 0.3% of end-to-end latency, invisible
+to a caller, bought by giving up a correctness guarantee and storing an index larger than the
+table it indexes. An ANN index earns its place when the scan itself becomes perceptible —
+on the order of 100k vectors, not 1.2k.
+
+## APIs
+
+Five endpoints. Every aggregate is computed by Postgres with `GROUP BY` — **the API never
+contacts arXiv**, and answers with the network disconnected.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /health` | Liveness, including the database — so "ok" means *can serve* |
+| `GET /stats/top-categories` | Top N categories by distinct paper count |
+| `GET /stats/top-authors` | Top N authors by distinct paper count |
+| `GET /stats/papers-over-time` | Paper counts per period and category |
+| `POST /ask` | Grounded answer from the stored abstracts, with cited sources |
 
 ```console
-$ curl -s 'localhost:8000/stats/papers-over-time?granularity=year&category=cs.CL'
-[{"period": "2023", "category": "cs.CL", "count": 1},
- {"period": "2024", "category": "cs.CL", "count": 4},
- {"period": "2025", "category": "cs.CL", "count": 17},
- {"period": "2026", "category": "cs.CL", "count": 319}]
-```
-
-**An unknown `category` is a 404, deliberately.** Otherwise `[]` would mean two different
-things — "this category has no papers in that window" and "you mistyped the code" — and a
-caller plotting an empty chart could not tell which. Valid codes come from
-[arXiv's taxonomy](https://arxiv.org/category_taxonomy); `/stats/top-categories` lists the
-ones actually loaded.
-
-```console
-$ curl -s 'localhost:8000/stats/papers-over-time?category=cs.Al'    # capital i, not L
-{"detail": "no category 'cs.Al' in this corpus — see GET /stats/top-categories for what is loaded"}
-```
-
-### `GET /stats/top-categories`
-
-```console
-$ curl -s 'localhost:8000/stats/top-categories?n=5'
+$ curl -s 'localhost:8000/stats/top-categories?n=3'
 [{"category": "cs.AI", "count": 622}, {"category": "cs.LG", "count": 606},
- {"category": "cs.CL", "count": 341}, {"category": "cs.CV", "count": 126},
- {"category": "stat.ML", "count": 86}]
+ {"category": "cs.CL", "count": 341}]
 ```
 
-Counts exceed the corpus size in total because a paper carries several categories — each
-is counted once per category it belongs to, and once only.
-
-### `GET /stats/top-authors`
-
-```console
-$ curl -s 'localhost:8000/stats/top-authors?n=3'
-[{"author": "Philip Torr", "count": 5}, {"author": "Zihan Wang", "count": 5},
- {"author": "Jian Li", "count": 4}]
-```
-
-`n` defaults to 10 and is bounded to 1–100 on both top-N endpoints. The time series is
-not paginated — its row count is bounded by the corpus (one row per period per category),
-not by anything the caller can send, so there is no parameter to cap.
-
-### `GET /health`
-
-Returns `{"status": "ok"}` — after querying the database, so a container healthcheck gates
-on "can actually serve" rather than "process is alive".
-
-**Every endpoint returns 503 `{"detail": "database unavailable"}` when the database is
-down**, never a 500 or a traceback. The driver's message goes to the server log, where an
-operator can act on it, and not into the response.
-
-### Reading the responses
-
-Each endpoint returns a **flat list of labelled points**, which is the shape charting
-libraries take directly — no client-side reshaping, no nesting to flatten.
-
-A few behaviours are deliberate and worth stating rather than leaving to be discovered:
-
-- **Periods are anchored to UTC.** `date_trunc` on a `timestamptz` otherwise uses the
-  database session's time zone, so the same corpus would bucket differently per caller.
-- **Periods with no papers are omitted, not zero-filled.** Charting libraries handle a
-  missing point; inventing a zero row would assert something about a gap in the data.
-- **The time series is keyed on `published`**, when a paper first appeared — not
-  `updated`, which moves whenever an author corrects a typo.
-- **Counts are distinct papers.** A paper in three categories contributes to three
-  category buckets, and is counted once in each.
-- **Ties are broken by name**, so identical requests return identical ordering.
-- **An empty corpus returns `[]` with 200.** An empty chart is a valid chart.
-- **Author identity is the name string.** arXiv publishes no author IDs, so two people
-  who share a name are one row here. Cheap to state, expensive to fix.
+📖 **Full reference — parameters, accepted values, responses, examples and error codes:
+[`docs/api.md`](docs/api.md)**
+· Interactive OpenAPI docs at [`/docs`](http://localhost:8000/docs) while the service runs.
 
 ## Asking questions — `POST /ask`
 
 Embeds the question, retrieves the nearest abstracts by cosine similarity, and answers from
-those alone.
-
-```console
-$ curl -s localhost:8000/ask -H 'content-type: application/json' \
-    -d '{"question": "How can LLM agents reuse experience from earlier tasks?"}'
-{
-  "answer": "LLM agents can reuse earlier experience by explicitly extracting and storing
-             reusable components from past interactions... LifeMem clusters accumulated
-             interaction trajectories into reusable skills (2609.12655)...",
-  "sources": [
-    {"arxiv_id": "2609.12655", "title": "LifeMem: Enabling Lifelong Experience Reuse for LLM Agents", "score": 0.841},
-    {"arxiv_id": "2609.04280", "title": "...", "score": 0.79}
-  ]
-}
-```
+those alone. Request and response shapes are in [`docs/api.md`](docs/api.md#post-ask); what
+follows is why it behaves the way it does.
 
 ### It says no when it should
 
@@ -322,27 +318,12 @@ both, not a universal constant.
 
 ⚠️ **Model IDs move.** `llama-3.3-70b-versatile` — the obvious choice from memory — is now
 Enterprise-only and returns 404 on a free key. `openai/gpt-oss-20b` was a Groq *production*
-model on 15 Sep 2026 and is what the samples above came from. If it has been retired by the
+model on 15 Sep 2026 and is what the documented samples came from. If it has been retired by the
 time you read this, set `LLM_MODEL` to any current id; nothing else needs to change.
 
 **Without a key, `/ask` still works** — it returns 503 with the retrieved papers in `sources`
 and an explicit message. Retrieval succeeded; discarding it with a 500 would be the worse
 answer. The same applies to a timeout or a retired model id.
-
-### Performance
-
-Measured over the 1,200-paper corpus with `EXPLAIN ANALYZE`:
-
-| Endpoint | Execution |
-|---|---|
-| `papers-over-time` | 4.2 ms |
-| `top-categories` | 1.5 ms |
-| `top-authors` | 6.5 ms |
-
-**No indexes are defined beyond the primary and unique keys.** Every plan is a sequential
-scan over a few thousand rows, and an index added without a measurement is decoration.
-The join tables are where one would first earn its place — roughly above 100k link rows,
-or ~50,000 papers.
 
 ## Tests
 
