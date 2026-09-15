@@ -72,6 +72,11 @@ docker compose exec api paper ingest -c cs.AI --full              # ignore the w
 docker compose exec api paper wipe                                # delete everything
 ```
 
+`-c` takes an arXiv category code and is repeatable. The full list of valid codes is arXiv's
+own taxonomy: **<https://arxiv.org/category_taxonomy>**. To see which categories are actually
+loaded in your corpus, call `GET /stats/top-categories?n=100` — the 1,200-paper default run
+spans 92 of them.
+
 **Re-running is safe and cheap.** Papers are upserted on `arxiv_id`, so a second run creates
 no duplicates — that is a database constraint, not application logic. Papers are sorted by
 last-update descending, so one high-water mark catches both new papers and revised old ones;

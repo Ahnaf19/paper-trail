@@ -24,7 +24,13 @@ def main() -> None:
 @app.command()
 def ingest(
     category: Annotated[
-        list[str], typer.Option("--category", "-c", help="arXiv category, repeatable.")
+        list[str],
+        typer.Option(
+            "--category",
+            "-c",
+            help="arXiv category code, e.g. cs.AI. Repeatable. "
+            "Codes: https://arxiv.org/category_taxonomy",
+        ),
     ],
     max_papers: Annotated[int, typer.Option("--max", help="Stop after this many papers.")] = 1100,
     full: Annotated[
