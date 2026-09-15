@@ -411,5 +411,5 @@ Roughly in the order I would pick them up.
 6. **Harden against prompt injection beyond the architectural bound.** Today the model has
    no tools, so the worst case is a wrong answer. If it ever gained tools, the delimiting and
    the system prompt alone would not be enough, and this would need real work.
-7. **An ANN index, once measured.** Exact search is 7.6 ms over 1,200 vectors. At ~100k it
+7. **An ANN index, once measured.** Exact search is 7.8 ms over 1,200 vectors. At ~100k it
    would be worth benchmarking HNSW against the recall it costs — but not before.
