@@ -24,20 +24,41 @@ def main() -> None:
 @app.command()
 def ingest(
     category: Annotated[
-        list[str],
+        list[str] | None,
         typer.Option(
             "--category",
             "-c",
-            help="arXiv category code, e.g. cs.AI. Repeatable. "
+            help="arXiv category code, e.g. cs.AI. REQUIRED, repeatable. "
             "Codes: https://arxiv.org/category_taxonomy",
         ),
-    ],
+    ] = None,
     max_papers: Annotated[int, typer.Option("--max", help="Stop after this many papers.")] = 1100,
     full: Annotated[
         bool, typer.Option("--full", help="Disable the early stop and re-scan everything.")
     ] = False,
 ) -> None:
-    """Fetch papers from arXiv. Safe to re-run: existing rows are refreshed, not duplicated."""
+    """Fetch papers from arXiv. Safe to re-run: existing rows are refreshed, not duplicated.
+
+    Examples:
+        paper ingest -c cs.AI
+        paper ingest -c cs.AI -c cs.CL -c cs.LG --max 1100
+    """
+    # Typer's own "Missing option" names what is absent but not what to type instead, and
+    # this is the one flag with no sane default -- omitting it would mean walking all of
+    # arXiv. Usage errors go to stderr as plain text, the way typer's own do, not to loguru.
+    if not category:
+        typer.secho("Error: at least one --category / -c is required.", fg="red", err=True)
+        typer.secho(
+            "\nThere is no 'all categories' mode — arXiv needs a query, and defaulting to\n"
+            "everything would silently start a walk over ~2.4 million papers.\n"
+            "\n  paper ingest -c cs.AI\n"
+            "  paper ingest -c cs.AI -c cs.CL -c cs.LG\n"
+            "\nValid codes:   https://arxiv.org/category_taxonomy\n"
+            "Already loaded: GET /stats/top-categories?n=100",
+            err=True,
+        )
+        raise typer.Exit(code=2)
+
     try:
         report = run_ingest(category, max_papers=max_papers, full=full)
     except ArxivUnavailableError as exc:

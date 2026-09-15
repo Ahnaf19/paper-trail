@@ -50,3 +50,15 @@ def test_a_run_that_fetched_pages_exits_zero(report):
 
     assert result.exit_code == 0
     assert "800 unchanged" in result.stderr
+
+
+def test_no_category_explains_what_to_type(report):
+    """Typer's stock "Missing option" names what is absent, not what to do about it —
+    and this is the one flag with no sane default."""
+    result = runner.invoke(cli.app, ["ingest"])
+
+    assert result.exit_code == 2
+    assert "--category / -c is required" in result.stderr
+    assert "paper ingest -c cs.AI -c cs.CL" in result.stderr  # a copyable example
+    assert "arxiv.org/category_taxonomy" in result.stderr  # where codes come from
+    assert "all categories" in result.stderr  # why there is no default
