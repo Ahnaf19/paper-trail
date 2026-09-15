@@ -70,16 +70,21 @@ class Settings(BaseSettings):
         return _with_driver(str(self.database_url), _ASYNC_DRIVER)
 
 
-# RELEVANCE_THRESHOLD, calibrated 15 Sep 2026 against the 1,200-paper corpus -- not guessed.
+# RELEVANCE_THRESHOLD, measured -- not guessed. Reproduce with:
+#     uv run python scripts/calibrate_threshold.py
 #
-# 23 questions, three groups, top-1 cosine similarity:
-#     in-corpus (12)                    0.765 .. 0.872
-#     adjacent CS, absent from corpus (5)  0.639 .. 0.706   <- the group that decides it
-#     off-topic (6)                     0.471 .. 0.583
+# 23 questions, three groups, top-1 cosine similarity (15 Sep 2026, 1,200 papers):
+#     in-corpus, must answer (12)           0.745 .. 0.868
+#     adjacent CS, must refuse (5)          0.649 .. 0.799   <- decides the number
+#     off-topic, must refuse (6)            0.471 .. 0.583
 #
-# Separable window is (0.706, 0.765]; 0.73 sits near its midpoint. The middle group is the
-# point: bge scores unrelated computer science at 0.64-0.71, so a plausible 0.5 would answer
-# "what is the CAP theorem?" out of AI abstracts. Separating arXiv from baking is trivial and
-# proves nothing. Re-calibrate if the corpus or the embedding model changes.
+# The middle group OVERLAPS the first, so no threshold separates them cleanly. The 0.799 is
+# "what guarantees does Raft provide?" matching "Algorithmic stability via ensembling":
+# bge encodes what a text is *about*, not whether it contains an answer, so any question
+# sharing ML vocabulary scores high. 0.73 removes the cheap failures at zero token cost --
+# all six off-topic and four of five adjacent -- and the grounded prompt is the second gate
+# for the residue. Raising it past 0.799 would refuse 8 of the 12 answerable questions.
+#
+# Re-run the script if the corpus or the embedding model changes.
 
 settings = Settings()
