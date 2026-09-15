@@ -48,7 +48,7 @@ class Settings(BaseSettings):
 
     # Retrieval (PRD §6.10). The threshold is calibrated -- see the note below.
     retrieval_top_k: int = Field(default=5, ge=1, le=20)
-    relevance_threshold: float = Field(default=0.73, ge=0.0, le=1.0)
+    relevance_threshold: float = Field(default=0.71, ge=0.0, le=1.0)
     max_question_chars: int = Field(default=1000, ge=1)
     max_context_chars: int = Field(default=12000, ge=1000)  # ~3k tokens, well inside any model
 
@@ -81,9 +81,15 @@ class Settings(BaseSettings):
 # The middle group OVERLAPS the first, so no threshold separates them cleanly. The 0.799 is
 # "what guarantees does Raft provide?" matching "Algorithmic stability via ensembling":
 # bge encodes what a text is *about*, not whether it contains an answer, so any question
-# sharing ML vocabulary scores high. 0.73 removes the cheap failures at zero token cost --
+# sharing ML vocabulary scores high. 0.71 removes the cheap failures at zero token cost --
 # all six off-topic and four of five adjacent -- and the grounded prompt is the second gate
 # for the residue. Raising it past 0.799 would refuse 8 of the 12 answerable questions.
+#
+# Every value in (0.687, 0.745] behaves identically on these 23 questions, so the choice is
+# only about which side gets the margin. Too low costs one LLM call that gate 2 usually
+# catches; too high refuses a real question with no second gate behind it. So the margin
+# leans low: 0.71 leaves 0.035 under the answerable floor, against 0.023 over the adjacent
+# ceiling. The corpus moves on every ingest; that headroom is what absorbs the drift.
 #
 # Re-run the script if the corpus or the embedding model changes.
 

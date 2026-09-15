@@ -261,15 +261,29 @@ The third group is the useless test: separating arXiv from sourdough is trivial.
 > [!WARNING]
 > The embedder reads _consensus, stability and guarantees_ topical overlap. `bge-small` encodes what a text is **about**, not whether it **contains an answer**
 
-- In group 2 the score `0.799` came _"What guarantees does the Raft consensus algorithm provide?"_
+- In group 2 the score `0.799` came from _"What guarantees does the Raft consensus algorithm provide?"_
 - which matches **"Algorithmic stability via ensembling"**
 - So a question sharing ML vocabulary will always score high (dataset has papers from category `cs.AI`).
 
 > [!NOTE]
-> `RELEVANCE_THRESHOLD = 0.73` therefore sits where it removes the cheap failures at zero token cost.
+> `RELEVANCE_THRESHOLD = 0.71` removes the cheap failures at zero token cost.
 
 Every off-topic question and 4 of 5 adjacent ones — and leaves the residue to gate 2.
 Pushing it above 0.799 would also refuse 8 of the 12 questions the corpus genuinely answers.
+
+**Why 0.71 and not 0.73.** Every value in the gap `(0.687, 0.745]` behaves *identically* on
+all 23 questions, so the evidence does not pick one — the choice is only about which side
+gets the margin. The two errors are not symmetric:
+
+| Set too low | Set too high |
+|---|---|
+| one wasted LLM call | a real question refused |
+| gate 2 usually catches it | **no second gate on this side** |
+
+So the margin leans low. 0.71 leaves **0.035** under the answerable floor against **0.023**
+over the adjacent ceiling; 0.73 had it backwards — 0.015 and 0.043 — putting three times the
+protection on the side that costs nothing. The corpus shifts on every ingest, and that
+headroom is what absorbs the drift.
 
 **Re-run the script if the corpus or the embedding model changes.** It prints the separable window, or says plainly that there isn't one.
 
@@ -293,7 +307,7 @@ Everything is an environment variable; nothing is hardcoded. `.env.example` list
 | `LLM_API_KEY`                         | —                                | 🔴 The only value to be set. Free at [console.groq.com/keys](https://console.groq.com/keys), no card.        |
 | `LLM_BASE_URL`                        | `https://api.groq.com/openai/v1` | Any OpenAI-compatible endpoint.                                                                              |
 | `LLM_MODEL`                           | `openai/gpt-oss-20b`             | Tested 15 Sep 2026 — see the warning under `/ask`.                                                           |
-| `RELEVANCE_THRESHOLD`                 | `0.73`                           | Calibrated, not chosen. See `/ask`.                                                                          |
+| `RELEVANCE_THRESHOLD`                 | `0.71`                           | Calibrated, not chosen. See `/ask`.                                                                          |
 | `RETRIEVAL_TOP_K`                     | `5`                              | Papers passed to the model as context.                                                                       |
 | `ARXIV_PAGE_SIZE`                     | `200`                            | arXiv's documented ceiling is 2000.                                                                          |
 | `ARXIV_MIN_REQUEST_INTERVAL`          | `3.0`                            | arXiv's Terms of Use floor. Cannot be set lower.                                                             |
@@ -330,14 +344,12 @@ Computed **in this process** by [`fastembed`](https://github.com/qdrant/fastembe
 uv sync && uv run pytest        # needs a local Postgres; see below
 ```
 
-100 tests. They **never touch the network, an LLM, or download a model** — the embedding
-provider and the LLM client both sit behind small interfaces, and the suite injects fakes
-before the app starts. The test database is created and migrated by the real Alembic
-migrations, so the schema under test is the schema that ships.
-
-They are aimed at what would actually break: XML parsing against a saved real capture,
-idempotent re-ingest, staleness detection, aggregation counts on seeded data, and the
-no-good-match path.
+- 100 tests that **never touch the network, an LLM, or download a model**
+- The embedding provider and the LLM client both sit behind small interfaces, and the suite injects fakes before the app starts.
+- The test database is created and migrated by the real Alembic migrations, so the schema under test is the schema that ships.
+- They are aimed at what would actually break: XML parsing against a saved real capture,
+  idempotent re-ingest, staleness detection, aggregation counts on seeded data, and the
+  no-good-match path.
 
 ## Project layout
 
