@@ -24,6 +24,7 @@ An eval that exercises its own private copy measures its own copy.
 import argparse
 import asyncio
 import json
+import random
 import statistics
 import sys
 from dataclasses import dataclass, field
@@ -42,7 +43,7 @@ from app.models import Paper
 from app.services.embeddings import FastEmbedEmbedder
 from app.services.llm import OpenAICompatibleClient
 from app.services.prompts import NO_ANSWER, fit_context
-from app.services.qa import answer_question
+from app.services.qa import AnswerResult, answer_question
 from app.services.retrieval import RetrievedPaper, retrieve
 
 MAX_K = 20  # deepest rank the reports quote; bounds one query per question
@@ -65,6 +66,17 @@ COARSE_STEP, FINE_STEP = 0.02, 0.01
 RETAINED_OF_CEILING = 0.95
 
 BAR_WIDTH = 34
+
+# Report 3 pacing, against Groq's free tier: `x-ratelimit-limit-tokens` is 8000 a minute. An
+# `/ask` call carries the retrieved context, so it costs far more than a bare question --
+# ~1,930 prompt tokens (mean context 7,042 chars) plus ~450 of completion, of which most are
+# gpt-oss-20b's reasoning tokens. 8000 / 2380 = 3.4 calls a minute; 20 s leaves margin.
+ASK_PAUSE_SECONDS = 20.0
+
+# All 24 negatives run -- they are the point of this report. Positives are sampled, because
+# their retrieval behaviour is already measured exactly, and for free, in report 1.
+E2E_POSITIVE_SAMPLE = 40
+E2E_SEED = 20260916
 
 # One judge call per negative that clears the gate -- a handful, not a per-row cost. The
 # system prompt tells the model to decline in prose, not with a sentinel, so refusal at the
@@ -435,6 +447,29 @@ async def judge_refusal(llm: OpenAICompatibleClient, question: str, answer: str)
     return verdict.strip().upper().startswith("DECLINED")
 
 
+async def ask_with_retry(
+    session: AsyncSession,
+    row: Row,
+    embedder: FastEmbedEmbedder,
+    llm: OpenAICompatibleClient,
+) -> AnswerResult:
+    """Retry a degraded answer rather than scoring it.
+
+    `answer_question` turns an LLM failure into a degraded result with the sources attached,
+    which is right for a caller but wrong for an eval: a rate-limited call is an infrastructure
+    event, not a behaviour. Scored as-is it reads as "the model answered a question it should
+    have refused" — contaminating the one number this report exists for.
+    """
+    result = await answer_question(session, row.question, embedder, llm)
+    for attempt in (1, 2, 3):
+        if not result.degraded:
+            return result
+        logger.warning("{} attempt {}: generation degraded, backing off", row.id, attempt)
+        await asyncio.sleep(20 * attempt)
+        result = await answer_question(session, row.question, embedder, llm)
+    return result
+
+
 async def report_end_to_end(
     session: AsyncSession,
     rows: list[Row],
@@ -447,11 +482,15 @@ async def report_end_to_end(
     outcomes = {"cited": 0, "answered_uncited": 0, "wrongly_refused": 0}
     refusals = {"gate1": 0, "gate2": 0, "wrongly_answered": 0}
     wrong: list[str] = []
+    degraded = 0
 
     for index, row in enumerate(rows):
         if index:
             await asyncio.sleep(pause)
-        result = await answer_question(session, row.question, embedder, llm)
+        result = await ask_with_retry(session, row, embedder, llm)
+        if result.degraded:
+            degraded += 1
+            continue
         refused_at_gate1 = result.answer == NO_ANSWER
 
         if row.is_positive:
@@ -473,22 +512,35 @@ async def report_end_to_end(
                 refusals["wrongly_answered"] += 1
                 wrong.append(f"{row.id} [{row.group}] {row.question}")
 
-    positives = sum(1 for r in rows if r.is_positive)
-    negatives = len(rows) - positives
+    # Denominators count what was actually scored — a row abandoned after three degraded
+    # attempts is reported on its own line, never folded into a behaviour.
+    scored_pos = sum(outcomes.values())
+    scored_neg = sum(refusals.values())
     lines = [
-        heading(f"3. END-TO-END  ({positives} positives + {negatives} must-refuse, through /ask)"),
+        heading(
+            f"3. END-TO-END  ({scored_pos} positives + {scored_neg} must-refuse, through /ask)"
+        ),
         "   positives",
-        f"     answered, gold paper cited     {outcomes['cited']:>4}/{positives}",
-        f"     answered, gold paper missing   {outcomes['answered_uncited']:>4}/{positives}",
-        f"     wrongly refused                {outcomes['wrongly_refused']:>4}/{positives}",
+        f"     answered, gold paper cited     {outcomes['cited']:>4}/{scored_pos}",
+        f"     answered, gold paper missing   {outcomes['answered_uncited']:>4}/{scored_pos}",
+        f"     wrongly refused                {outcomes['wrongly_refused']:>4}/{scored_pos}",
         "",
         "   must-refuse",
-        f"     refused at gate 1 (threshold)  {refusals['gate1']:>4}/{negatives}   deterministic, 0 LLM calls",
-        f"     refused at gate 2 (prompt)     {refusals['gate2']:>4}/{negatives}   probabilistic, 1 LLM call",
-        f"     ANSWERED ANYWAY                {refusals['wrongly_answered']:>4}/{negatives}   ← the number that matters",
+        f"     refused at gate 1 (threshold)  {refusals['gate1']:>4}/{scored_neg}"
+        "   deterministic, 0 LLM calls",
+        f"     refused at gate 2 (prompt)     {refusals['gate2']:>4}/{scored_neg}"
+        "   probabilistic, 1 LLM call",
+        f"     ANSWERED ANYWAY                {refusals['wrongly_answered']:>4}/{scored_neg}"
+        "   ← the number that matters",
     ]
     if wrong:
         lines += ["", "   answered anyway:"] + [f"     {w}" for w in wrong]
+    if degraded:
+        lines += [
+            "",
+            f"   ⚠ {degraded} rows abandoned after 3 degraded generations (rate limit or outage).",
+            "     Excluded from every count above — an infrastructure failure is not a behaviour.",
+        ]
     lines += [
         "",
         "   Gate 2 is judged by one LLM call per negative that clears gate 1 — the system",
@@ -499,7 +551,16 @@ async def report_end_to_end(
         "positives": outcomes,
         "negatives": refusals,
         "answered_anyway": wrong,
+        "degraded_abandoned": degraded,
     }
+
+
+def sample_for_e2e(rows: list[Row], want: int) -> list[Row]:
+    """Every negative, plus a fixed-seed sample of positives — so report 3 is repeatable."""
+    negatives = [r for r in rows if not r.is_positive]
+    positives = sorted((r for r in rows if r.is_positive), key=lambda r: r.id)
+    rng = random.Random(E2E_SEED)  # noqa: S311 -- choosing eval rows, not generating secrets
+    return rng.sample(positives, min(want, len(positives))) + negatives
 
 
 # --- entry point ----------------------------------------------------------------------
@@ -511,7 +572,15 @@ async def main() -> int:
     parser.add_argument("--with-llm", action="store_true", help="also run report 3 through /ask")
     parser.add_argument("--save", metavar="LABEL", help="write eval/results/<LABEL>.json")
     parser.add_argument("--limit", type=int, help="score only the first N rows (smoke test)")
-    parser.add_argument("--pause", type=float, default=7.5, help="seconds between LLM calls")
+    parser.add_argument(
+        "--pause", type=float, default=ASK_PAUSE_SECONDS, help="seconds between LLM calls"
+    )
+    parser.add_argument(
+        "--e2e-positives",
+        type=int,
+        default=E2E_POSITIVE_SAMPLE,
+        help="how many positives report 3 runs (every negative always runs)",
+    )
     args = parser.parse_args()
     configure_logging()
 
@@ -545,7 +614,8 @@ async def main() -> int:
             if not llm.configured:
                 print("\nLLM_API_KEY is not set — skipping report 3.")
             else:
-                await report_end_to_end(session, rows, embedder, llm, args.pause, report)
+                sampled = sample_for_e2e(rows, args.e2e_positives)
+                await report_end_to_end(session, sampled, embedder, llm, args.pause, report)
                 await llm.aclose()
 
     report.data["config"] = {

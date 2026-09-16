@@ -255,59 +255,42 @@ Measured on this corpus:
 Gate 1 is deterministic but imprecise; gate 2 is precise but probabilistic. Neither is
 sufficient alone, which is why both are there.
 
-### Threshold calibration
+### Where the threshold comes from
 
 The threshold is the one constant here that cannot be reasoned about.
 
 > [!NOTE]
-> It is a property of the embedding model _and_ the corpus.
+> It is a property of the embedding model _and_ the corpus, so it is **measured** against a
+> labelled dataset — see [Evaluation](#evaluation) for the method.
 
-So it is measured, by a script that ships with the repo:
+| t        | correct answers | false passes | of which adjacent-CS |
+| -------- | --------------- | ------------ | -------------------- |
+| 0.70     | 92/97           | 4/24         | 4/14                 |
+| 0.71     | 92/97           | 3/24         | 3/14                 |
+| **0.75** | **92/97**       | **2/24**     | **2/14**             |
+| 0.78     | 91/97           | 2/24         | 2/14                 |
+| 0.80     | 87/97           | 0/24         | 0/14                 |
 
-```bash
-uv run python scripts/calibrate_threshold.py
-```
-
-**Method:** 23 questions in three groups. Embed each, take the **top-1** cosine similarity
-against the stored abstracts, and look for a value that sits above everything we must refuse
-and below everything we must answer.
-
-| Group                                                      | Must   | Measured (15 Sep 2026, 1,200 papers) |
-| ---------------------------------------------------------- | ------ | ------------------------------------ |
-| In-corpus — _"How is RAG evaluated?"_ (12)                 | answer | 0.745 – 0.868                        |
-| **Adjacent CS, absent — _"What is the CAP theorem?"_ (5)** | refuse | **0.649 – 0.799**                    |
-| Off-topic — _"How do I bake sourdough?"_ (6)               | refuse | 0.471 – 0.583                        |
-
-The third group is the useless test: separating arXiv from sourdough is trivial. **The middle group decides the number**, and it is also where the method runs out of road — those five questions overlap the answerable range, so _no threshold separates them cleanly_.
+Retrieval puts the correct paper inside the top-5 for **92 of 97** questions, so 92 is a
+**ceiling no threshold can beat** — a gate cannot repair retrieval, only avoid discarding what
+it found. Everything from 0.70 to 0.76 sits at that ceiling, so the positives cannot separate
+those values and the negatives decide. `RELEVANCE_THRESHOLD = 0.75` is the lowest value
+reaching the fewest false passes.
 
 > [!WARNING]
-> The embedder reads _consensus, stability and guarantees_ topical overlap. `bge-small` encodes what a text is **about**, not whether it **contains an answer**
+> **The remaining overlap is structural, not a tuning failure.** `bge-small` encodes what a
+> text is _about_, not whether it _contains an answer_.
 
-- In group 2 the score `0.799` came from _"What guarantees does the Raft consensus algorithm provide?"_
-- which matches **"Algorithmic stability via ensembling"**
-- So a question sharing ML vocabulary will always score high (dataset has papers from category `cs.AI`).
+The two questions that still clear gate 1 are real computer science this corpus has never seen:
 
-> [!NOTE]
-> `RELEVANCE_THRESHOLD = 0.71` removes the cheap failures at zero token cost.
+| Question                                                             | top-1 | Nearest paper in the corpus                        |
+| -------------------------------------------------------------------- | ----- | -------------------------------------------------- |
+| _"What guarantees does the Raft consensus algorithm provide?"_       | 0.799 | Algorithmic stability via ensembling                |
+| _"What problem does consistent hashing solve in a distributed cache?"_ | 0.796 | Shared KV Caching for Replicated 27B Inference      |
 
-Every off-topic question and 4 of 5 adjacent ones — and leaves the residue to gate 2.
-Pushing it above 0.799 would also refuse 8 of the 12 questions the corpus genuinely answers.
-
-**Why 0.71 and not 0.73.** Every value in the gap `(0.687, 0.745]` behaves _identically_ on
-all 23 questions, so the evidence does not pick one — the choice is only about which side
-gets the margin. The two errors are not symmetric:
-
-| Set too low               | Set too high                    |
-| ------------------------- | ------------------------------- |
-| one wasted LLM call       | a real question refused         |
-| gate 2 usually catches it | **no second gate on this side** |
-
-So the margin leans low. 0.71 leaves **0.035** under the answerable floor against **0.023**
-over the adjacent ceiling; 0.73 had it backwards — 0.015 and 0.043 — putting three times the
-protection on the side that costs nothing. The corpus shifts on every ingest, and that
-headroom is what absorbs the drift.
-
-**Re-run the script if the corpus or the embedding model changes.** It prints the separable window, or says plainly that there isn't one.
+Raising the threshold until both are refused costs **five** real answers — which is exactly
+why gate 2 exists rather than a higher gate 1. A cross-encoder re-ranker is the real fix, and
+the eval is what would prove it worked.
 
 ### The model id
 
@@ -368,13 +351,105 @@ docker compose up -d db    # Postgres + pgvector on :5432 — the only prerequis
 uv sync && uv run pytest
 ```
 
-- 108 tests that **never touch the network, an LLM, or download a model**
+- 125 tests that **never touch the network, an LLM, or download a model**
 - They run against a throwaway `arxiv_test` database, so your corpus is untouched.
 - The embedding provider and the LLM client both sit behind small interfaces, and the suite injects fakes before the app starts.
 - The test database is created and migrated by the real Alembic migrations, so the schema under test is the schema that ships.
 - They are aimed at what would actually break: XML parsing against a saved real capture,
   idempotent re-ingest, staleness detection, aggregation counts on seeded data, and the
   no-good-match path.
+
+## Evaluation
+
+The brief did not ask for tests either; there are 125, because tests are what make code
+verifiable. The same argument applies to the RAG path — and no test suite tells you whether
+the _right_ papers come back, or what the relevance gate costs.
+
+```bash
+uv run python scripts/evaluate.py             # retrieval + threshold sweep — offline, free
+uv run python scripts/evaluate.py --with-llm  # + end-to-end answer/refuse behaviour
+```
+
+Run history and before/after comparisons: [`eval/RESULTS.md`](eval/RESULTS.md).
+
+### The dataset
+
+[`eval/golden.jsonl`](eval/golden.jsonl) — 121 committed, human-readable rows, built by
+[`scripts/build_golden_set.py`](scripts/build_golden_set.py):
+
+| Kind                                            | n   | Source           |
+| ----------------------------------------------- | --- | ---------------- |
+| Positives — `big` band (category ≥ 100 papers)  | 38  | generated        |
+| Positives — `mid` band (10–99)                  | 34  | generated        |
+| Positives — `thin` band (< 10)                  | 25  | generated        |
+| Negatives — adjacent computer science           | 14  | **hand-written** |
+| Negatives — off-topic                           | 10  | **hand-written** |
+
+> [!IMPORTANT]
+> **Positives are authored paper-first**: sample a paper, _then_ have the model write a
+> question its abstract answers. Doing it the other way round — asking a question and
+> labelling whatever retrieval returned — makes `recall@5 = 1.0` by construction.
+
+Sampling is stratified by each paper's **rarest** category. Five categories hold most of this
+corpus, so a uniform sample would only test retrieval where it is densest. Negatives stay
+hand-written because asking a model for "questions about things this corpus does not contain"
+reliably produces things it does.
+
+### Retrieval  (97 positives, 2,370 papers, 16 Sep 2026)
+
+| Metric    | Overall   |
+| --------- | --------- |
+| recall@1  | 0.897     |
+| recall@5  | **0.948** |
+| recall@10 | 0.979     |
+| MRR@20    | 0.918     |
+
+| Band                    | n   | recall@1 | recall@5 | MRR   |
+| ----------------------- | --- | -------- | -------- | ----- |
+| `big` (≥ 100 papers)    | 38  | 0.947    | 0.947    | 0.955 |
+| `mid` (10–99)           | 34  | 0.824    | 0.971    | 0.875 |
+| `thin` (< 10)           | 25  | 0.920    | 0.920    | 0.920 |
+
+Reported per band as well as overall, because thin categories are deliberately over-sampled —
+the overall figure is not what real traffic would see. The `mid` band has the worst `recall@1`
+and the best `recall@5`, which is what topic confusion looks like: the right paper is found,
+just not first. The `thin` band is flat across every `k`, so for a rare category it is rank 1
+or nowhere.
+
+> [!NOTE]
+> **Not precision@k.** With one relevant paper per question, `precision@5` cannot exceed 0.2
+> however perfect the ranking — it measures the value of `k`, not the system. `recall@k` here
+> is hit-rate@k.
+
+### What this replaced
+
+Threshold selection began as *"find a gap between three groups of scores"*. That method has no
+answer when the groups overlap, and they do:
+
+| | Before — range separation | After — labelled classification |
+| --- | --- | --- |
+| Data | 23 hand-written questions | 121 rows, 97 of them generated paper-first |
+| Question asked | is there a gap? | what does each threshold cost? |
+| Output | `NO SEPARABLE WINDOW` — no recommendation | `0.75`, derived from a stated rule |
+| `RETRIEVAL_TOP_K` | a convention | a measured choice, priced at +2.1pp for +34% context |
+
+The overlap did not go away. It stopped being a dead end and became a visible trade-off curve.
+
+### Limits, stated plainly
+
+- **Recall here is an upper bound.** The questions were generated from the abstracts they
+  point at, so they share vocabulary with them. A human-written question would score lower.
+  The generator rejects any question lifting five consecutive words from its source title,
+  which narrows the gap without closing it.
+- **Single-label ground truth.** Each question names exactly one correct paper, though others
+  may be relevant. That rules out `precision@k` and `nDCG` honestly rather than reporting them
+  wrongly.
+- **The set is bound to its corpus.** arXiv has no "as of" query, so a corpus ingested on
+  another day is a different corpus. `golden.meta.json` records the fingerprint and report 0
+  reports missing papers as **skipped**, never as retrieval failures.
+- **Answer text is not scored.** Faithfulness and answer relevance need an LLM judge validated
+  against human labels, or a framework like RAGAS. The end-to-end report checks that the right
+  paper was cited and that a must-refuse question was refused — not how good the prose is.
 
 ## Project layout
 
@@ -424,10 +499,11 @@ These are deliberate, and stated rather than hidden.
 
 Roughly in the order I would pick them up.
 
-1. **Run the ingest on a machine arXiv will talk to.** Both IPs available to me are
-   rate-limited by arXiv (429 on every uncached request), so the 1,200-paper corpus was
-   captured once through a VPN and replayed locally through the real client. Every stage is
-   exercised, but a long live multi-page run has not been.
+1. **Resumable backfill.** The incremental path keeps a corpus *current*; it cannot catch one
+   *up*. A run stopped by `--max` above the watermark leaves a span unfetched, and the
+   watermark guard correctly refuses to advance over it — but the remedy is manual, a larger
+   `--max`. The real fix is a second piece of state: a floor alongside the ceiling, so a
+   bounded run resumes where the last one stopped instead of restarting at the top of the feed.
 2. **Schedule the ingest.** The incremental path is built and cheap — a re-run with nothing
    new costs one throttled request per page — but nothing triggers it. A cron container or
    an external scheduler is a small change.

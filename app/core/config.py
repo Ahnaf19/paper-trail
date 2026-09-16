@@ -47,8 +47,8 @@ class Settings(BaseSettings):
     embedding_cache_dir: str | None = None
 
     # Retrieval (PRD §6.10). The threshold is calibrated -- see the note below.
-    retrieval_top_k: int = Field(default=5, ge=1, le=20)
-    relevance_threshold: float = Field(default=0.71, ge=0.0, le=1.0)
+    retrieval_top_k: int = Field(default=5, ge=1, le=20)  # measured, see the note below
+    relevance_threshold: float = Field(default=0.75, ge=0.0, le=1.0)
     max_question_chars: int = Field(default=1000, ge=1)
     max_context_chars: int = Field(default=12000, ge=1000)  # ~3k tokens, well inside any model
 
@@ -70,26 +70,37 @@ class Settings(BaseSettings):
         return _with_driver(str(self.database_url), _ASYNC_DRIVER)
 
 
-# RELEVANCE_THRESHOLD, measured -- not guessed. Reproduce with:
-#     uv run python scripts/calibrate_threshold.py
+# RELEVANCE_THRESHOLD and RETRIEVAL_TOP_K, measured -- not guessed. Reproduce with:
+#     uv run python scripts/evaluate.py
 #
-# 23 questions, three groups, top-1 cosine similarity (15 Sep 2026, 1,200 papers):
-#     in-corpus, must answer (12)           0.745 .. 0.868
-#     adjacent CS, must refuse (5)          0.649 .. 0.799   <- decides the number
-#     off-topic, must refuse (6)            0.471 .. 0.583
+# Against eval/golden.jsonl -- 97 generated positives and 24 hand-written must-refuse
+# questions, on the 2,370-paper corpus of 16 Sep 2026:
 #
-# The middle group OVERLAPS the first, so no threshold separates them cleanly. The 0.799 is
-# "what guarantees does Raft provide?" matching "Algorithmic stability via ensembling":
-# bge encodes what a text is *about*, not whether it contains an answer, so any question
-# sharing ML vocabulary scores high. 0.71 removes the cheap failures at zero token cost --
-# all six off-topic and four of five adjacent -- and the grounded prompt is the second gate
-# for the residue. Raising it past 0.799 would refuse 8 of the 12 answerable questions.
+#       t      correct   false-pass   adjacent CS
+#     0.70      92/97       4/24         4/14
+#     0.71      92/97       3/24         3/14      <- the previous value
+#     0.75      92/97       2/24         2/14      <- here
+#     0.78      91/97       2/24         2/14
+#     0.80      87/97       0/24         0/14
 #
-# Every value in (0.687, 0.745] behaves identically on these 23 questions, so the choice is
-# only about which side gets the margin. Too low costs one LLM call that gate 2 usually
-# catches; too high refuses a real question with no second gate behind it. So the margin
-# leans low: 0.71 leaves 0.035 under the answerable floor, against 0.023 over the adjacent
-# ceiling. The corpus moves on every ingest; that headroom is what absorbs the drift.
+# Retrieval puts the gold paper inside the top-5 for 92 of those 97, so 92 is a CEILING no
+# threshold can beat: a gate cannot repair retrieval, only avoid discarding it. Everything
+# from 0.70 to 0.76 sits at that ceiling, so the positives cannot separate them and the
+# negatives decide -- 0.75 is the lowest value reaching the fewest false passes. It drops
+# "How does a bloom filter trade memory for false positives?" (0.7413), which had been
+# matching a paper on learned request routing.
+#
+# Clearing the last two false passes costs five real answers, so it is not worth doing. They
+# are "What guarantees does the Raft consensus algorithm provide?" (0.7992, matching
+# "Algorithmic stability via ensembling") and "What problem does consistent hashing solve in
+# a distributed cache?" (0.7962, matching "Shared KV Caching for Replicated 27B Inference").
+# bge encodes what a text is *about*, not whether it contains an answer, so this overlap is
+# structural -- the grounded prompt is the second gate for it, and a cross-encoder re-ranker
+# would be the real fix.
+#
+# RETRIEVAL_TOP_K stays at 5: k=10 raises the ceiling to 94/97 but grows the context 34%
+# (7,042 -> 9,418 chars), and MAX_CONTEXT_CHARS then trims two thirds of questions, so the
+# tenth paper often never reaches the model. Recorded in eval/results/002-topk-10.json.
 #
 # Re-run the script if the corpus or the embedding model changes.
 
