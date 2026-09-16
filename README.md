@@ -41,8 +41,8 @@ curl -s -X POST localhost:8000/ask -H 'Content-Type: application/json' \
 
 ```jsonc
 // GET /stats/top-categories?n=3
-[{"category": "cs.AI", "count": 622}, {"category": "cs.LG", "count": 606},
- {"category": "cs.CL", "count": 341}]
+[{"category": "cs.AI", "count": 1276}, {"category": "cs.LG", "count": 1160},
+ {"category": "cs.CL", "count": 667}]
 
 // POST /ask
 {
@@ -95,7 +95,7 @@ docker compose exec api paper wipe                                # delete every
   no category there is no `search_query` to send — arXiv has no "everything" query. Omitting
   it exits 2 with an example to copy. Valid codes:
   [arXiv's taxonomy](https://arxiv.org/category_taxonomy). Loaded ones:
-  `GET /stats/top-categories?n=100` — the default run spans 92.
+  `GET /stats/top-categories?n=110` — the corpus below spans 104.
 - **Re-running is safe and cheap.** Papers upsert on `arxiv_id` — a database constraint, not application logic. Sorted by last-update descending, so one high-water mark catches new _and_ revised papers; the scan stops once a whole page predates the mark.
 - **A truncated run does not fake progress.** The mark advances only when the walk came
   down far enough to meet the previous one. If `--max` stops it short, the span in between
@@ -174,30 +174,33 @@ ingest_state
 
 ### No indexes beyond the primary and unique keys
 
-Measured, not assumed. Every plan is a sequential scan:
+Measured, not assumed — warm medians of nine calls through the service functions
+themselves, on the 2,370-paper corpus. Every plan is a sequential scan:
 
-| Query                                     | Execution |
-| ----------------------------------------- | --------- |
-| `top-categories`                          | 1.9 ms    |
-| `papers-over-time`                        | 8.5 ms    |
-| `/ask` retrieval — top-5 of 1,200 vectors | 7.8 ms    |
+| Query                                     | Median   |
+| ----------------------------------------- | -------- |
+| `top-categories?n=10`                     | 4.5 ms   |
+| `top-authors?n=10`                        | 12.9 ms  |
+| `papers-over-time` (month, all)           | 7.8 ms   |
+| `/ask` retrieval — top-5 of 2,370 vectors | 2.8 ms   |
 
 **The aggregations don't want an index.** An index buys _selectivity_; a `GROUP BY` over the
 whole corpus has none. Postgres reads every row regardless, so a seq scan is the right plan.
 
 **Vector search would genuinely be faster with one** — that's the real trade. Building HNSW
-over the same 1,200 vectors:
+over the same 2,370 vectors (`EXPLAIN ANALYZE`, warm median of seven):
 
 |            | Exact (today) | HNSW                        |
 | ---------- | ------------- | --------------------------- |
-| Execution  | 7.8 ms        | **0.6 ms**                  |
+| Execution  | 1.18 ms       | **0.14 ms**                 |
 | Result     | exact         | **approximate**             |
-| Index size | —             | 2408 kB, on a 2400 kB table |
+| Build      | —             | 410 ms                      |
+| Index size | —             | 4752 kB, on a 4760 kB table |
 
-12× faster, and still wrong here: **those 7 ms sit inside a request whose LLM call takes 1–3
-seconds.** You would trade a correctness guarantee for 0.3% of end-to-end latency, and store
-an index bigger than the table. It earns its place when the scan itself becomes perceptible —
-around 100k vectors, not 1.2k.
+8.7× faster, and still wrong here: **the 1 ms it saves sits inside a request whose LLM call
+takes 1–3 seconds.** You would trade a correctness guarantee for well under 0.1% of end-to-end
+latency, and store an index the size of the table. It earns its place when the scan itself
+becomes perceptible — around 100k vectors, not 2.4k.
 
 ## APIs
 
@@ -214,8 +217,8 @@ contacts arXiv**, and answers with the network disconnected.
 
 ```console
 $ curl -s 'localhost:8000/stats/top-categories?n=3'
-[{"category": "cs.AI", "count": 622}, {"category": "cs.LG", "count": 606},
- {"category": "cs.CL", "count": 341}]
+[{"category": "cs.AI", "count": 1276}, {"category": "cs.LG", "count": 1160},
+ {"category": "cs.CL", "count": 667}]
 ```
 
 - **Full reference: [`docs/api.md`](docs/api.md)**
@@ -312,8 +315,8 @@ Everything is an environment variable; nothing is hardcoded. `.env.example` list
 | `LLM_API_KEY`                         | —                                | 🔴 The only value to be set. Free at [console.groq.com/keys](https://console.groq.com/keys), no card.        |
 | `LLM_BASE_URL`                        | `https://api.groq.com/openai/v1` | Any OpenAI-compatible endpoint.                                                                              |
 | `LLM_MODEL`                           | `openai/gpt-oss-20b`             | Tested 15 Sep 2026 — see the warning under `/ask`.                                                           |
-| `RELEVANCE_THRESHOLD`                 | `0.71`                           | Calibrated, not chosen. See `/ask`.                                                                          |
-| `RETRIEVAL_TOP_K`                     | `5`                              | Papers passed to the model as context.                                                                       |
+| `RELEVANCE_THRESHOLD`                 | `0.75`                           | Measured against a labelled set, not chosen. See [Evaluation](#evaluation).                                  |
+| `RETRIEVAL_TOP_K`                     | `5`                              | Papers passed to the model as context. `10` was measured and rejected — see `eval/RESULTS.md`.               |
 | `ARXIV_PAGE_SIZE`                     | `200`                            | arXiv's documented ceiling is 2000.                                                                          |
 | `ARXIV_MIN_REQUEST_INTERVAL`          | `3.0`                            | arXiv's Terms of Use floor. Cannot be set lower.                                                             |
 | `LOG_LEVEL`                           | `INFO`                           |                                                                                                              |
@@ -483,11 +486,18 @@ These are deliberate, and stated rather than hidden.
   model answered from the legitimate content instead. But the real protection is
   architectural: **the model has no tools, no database access and no network**, so the worst
   case is a wrong answer, never an action.
-- **The relevance threshold does not separate cleanly.** Real computer science that this
-  corpus lacks can score above answerable questions — _"what guarantees does Raft provide?"_
-  reaches 0.799 by matching _"Algorithmic stability via ensembling"_. The grounded prompt
-  catches it, but that second gate is probabilistic where the first is not. A cross-encoder
-  re-rank over the top-k would be the real fix.
+- **The relevance threshold does not separate cleanly.** Real computer science this corpus
+  lacks can outscore answerable questions — _"what guarantees does Raft provide?"_ reaches
+  0.799 by matching _"Algorithmic stability via ensembling"_. Measured cost of closing the
+  gap: 2 of 24 must-refuse questions clear gate 1, and raising the threshold until none do
+  would refuse 5 real answers. The grounded prompt catches the residue, but that second gate
+  is probabilistic where the first is not. A cross-encoder re-rank is the real fix.
+- **A bounded ingest cannot backfill.** `--max` stops the walk, and if it stops above the
+  watermark the span between was never fetched. The mark refuses to advance over that gap and
+  the run reports `[gap left open]`, so the corpus never silently loses a window — but closing
+  it needs a larger `--max` chosen by hand. See [what I would do with more time](#what-i-would-do-with-more-time).
+- **The evaluation has its own limits** — synthetic positives, single-label ground truth, and
+  coupling to the corpus it was built on. Stated in full under [Evaluation](#evaluation).
 - **A refusal from the second gate still returns sources.** When the model declines, those
   five papers are what was searched, not what grounded an answer — the response shape cannot
   currently say which.
@@ -517,5 +527,5 @@ Roughly in the order I would pick them up.
 6. **Harden against prompt injection beyond the architectural bound.** Today the model has
    no tools, so the worst case is a wrong answer. If it ever gained tools, the delimiting and
    the system prompt alone would not be enough, and this would need real work.
-7. **An ANN index, once measured.** Exact search is 7.8 ms over 1,200 vectors. At ~100k it
+7. **An ANN index, once measured.** Exact search is 1.2 ms over 2,370 vectors. At ~100k it
    would be worth benchmarking HNSW against the recall it costs — but not before.
