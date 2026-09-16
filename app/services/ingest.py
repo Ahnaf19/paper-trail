@@ -30,6 +30,7 @@ class IngestReport:
     unchanged: int = 0
     stopped_early: bool = False
     embedded: int = 0
+    gap_left_open: bool = False
     changed_paper_ids: list[int] | None = None
 
 
@@ -59,6 +60,7 @@ def run_ingest(
     embedder = embedder or FastEmbedEmbedder()
     report = IngestReport(changed_paper_ids=[])
     newest_seen: datetime | None = None
+    oldest_seen: datetime | None = None
     owns_client = client is None
     arxiv = client or ArxivClient()
 
@@ -86,7 +88,9 @@ def run_ingest(
             report.embedded += embedded
 
             page_newest = max(p.updated for p in page.papers)
+            page_oldest = min(p.updated for p in page.papers)
             newest_seen = page_newest if newest_seen is None else max(newest_seen, page_newest)
+            oldest_seen = page_oldest if oldest_seen is None else min(oldest_seen, page_oldest)
             logger.info(
                 "page start={} papers={} new={} updated={} unchanged={} (total {})",
                 start,
@@ -113,9 +117,35 @@ def run_ingest(
 
     # Only after the loop finishes cleanly — an exception must not record progress we
     # did not make, or the next run would stop early over a gap.
-    if newest_seen is not None:
+    if newest_seen is not None and oldest_seen is not None:
         with session_factory() as session:
-            save_watermark(session, key, newest_seen)
+            report.gap_left_open = not _advance_watermark(
+                session, key, newest=newest_seen, oldest=oldest_seen
+            )
             session.commit()
 
     return report
+
+
+def _advance_watermark(session: Session, key: str, *, newest: datetime, oldest: datetime) -> bool:
+    """Move the mark to `newest` only if this run's span joins onto what we already held.
+
+    The mark asserts "everything at or above this is ingested". That holds for `newest`
+    only when the walk came down far enough to meet the previous mark. A run cut short by
+    `--max` can stop above it, leaving a span that was never fetched — and advancing over
+    that span would bury it permanently below the next run's stop threshold.
+
+    Returns whether the mark moved.
+    """
+    previous = read_watermark(session, key)
+    if previous is None or oldest <= previous:
+        save_watermark(session, key, newest)
+        return True
+
+    logger.warning(
+        "gap left open: this run reached back only to {}, still above the watermark {}. "
+        "Leaving the mark where it is — re-run with a larger --max (or --full) to close it.",
+        oldest.isoformat(),
+        previous.isoformat(),
+    )
+    return False

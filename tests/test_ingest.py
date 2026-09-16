@@ -163,3 +163,46 @@ def test_an_entirely_empty_feed_fetches_no_pages(session):
     assert report.pages_fetched == 0
     assert report.papers_seen == 0
     assert client.pages_requested == 1
+
+
+def test_a_capped_run_that_never_reaches_the_watermark_leaves_it_alone(session):
+    """The mark means "everything at or above this is ingested". A run stopped by --max
+    above the old mark never fetched the span between them — advancing would bury that
+    span below the next run's stop threshold, permanently."""
+    old_mark = NOW
+    save_watermark(session, categories_key(CATEGORIES), old_mark)
+    session.commit()
+
+    # Every paper is newer than the mark, so the walk never reaches down to it.
+    recent = [make_paper(f"2409.0000{i}", updated=NOW + timedelta(days=10)) for i in range(3)]
+    report, _ = run(factory_for(session), [recent] * 5, max_papers=3, total=999)
+
+    assert report.gap_left_open is True
+    assert read_watermark(session, categories_key(CATEGORIES)) == old_mark
+
+
+def test_a_capped_run_that_does_reach_the_watermark_still_advances_it(session):
+    """The guard tests contiguity, not the stop reason — hitting --max is fine as long as
+    the walk came down far enough to join what we already held."""
+    save_watermark(session, categories_key(CATEGORIES), NOW)
+    session.commit()
+
+    reaching = [
+        make_paper("2409.00001", updated=NOW + timedelta(days=10)),
+        make_paper("2409.00002", updated=NOW - timedelta(days=1)),  # below the mark
+    ]
+    report, _ = run(factory_for(session), [reaching] * 5, max_papers=2, total=999)
+
+    assert report.gap_left_open is False
+    assert read_watermark(session, categories_key(CATEGORIES)) == NOW + timedelta(days=10)
+
+
+def test_a_capped_first_run_records_a_watermark(session):
+    """With nothing held there is no span to skip, so the newest is honest — this is what
+    keeps the cold `--max` run's second pass able to stop early."""
+    newest = NOW + timedelta(days=3)
+    pages = [[make_paper(f"2409.0000{i}", updated=newest - timedelta(hours=i)) for i in range(3)]]
+    report, _ = run(factory_for(session), pages * 5, max_papers=3, total=999)
+
+    assert report.gap_left_open is False
+    assert read_watermark(session, categories_key(CATEGORIES)) == newest

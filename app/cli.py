@@ -32,7 +32,9 @@ def ingest(
             "Codes: https://arxiv.org/category_taxonomy",
         ),
     ] = None,
-    max_papers: Annotated[int, typer.Option("--max", help="Stop after this many papers.")] = 1100,
+    max_papers: Annotated[
+        int, typer.Option("--max", help="Stop after this many papers (rounded up to a page).")
+    ] = 1200,
     full: Annotated[
         bool, typer.Option("--full", help="Disable the early stop and re-scan everything.")
     ] = False,
@@ -41,7 +43,7 @@ def ingest(
 
     Examples:
         paper ingest -c cs.AI
-        paper ingest -c cs.AI -c cs.CL -c cs.LG --max 1100
+        paper ingest -c cs.AI -c cs.CL -c cs.LG --max 1200
     """
     # Typer's own "Missing option" names what is absent but not what to type instead.
     # Usage errors go to stderr as plain text, the way typer's own do, not to loguru.
@@ -77,7 +79,7 @@ def ingest(
         raise typer.Exit(code=1)
 
     logger.success(
-        "done: {} pages, {} papers ({} new, {} updated, {} unchanged, {} embedded){}",
+        "done: {} pages, {} papers ({} new, {} updated, {} unchanged, {} embedded){}{}",
         report.pages_fetched,
         report.papers_seen,
         report.inserted,
@@ -85,6 +87,7 @@ def ingest(
         report.unchanged,
         report.embedded,
         " [stopped early]" if report.stopped_early else "",
+        " [gap left open]" if report.gap_left_open else "",
     )
 
 
