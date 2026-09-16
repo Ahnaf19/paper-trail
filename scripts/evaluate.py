@@ -41,7 +41,7 @@ from app.db.session import AsyncSessionLocal
 from app.models import Paper
 from app.services.embeddings import FastEmbedEmbedder
 from app.services.llm import OpenAICompatibleClient
-from app.services.prompts import NO_ANSWER
+from app.services.prompts import NO_ANSWER, fit_context
 from app.services.qa import answer_question
 from app.services.retrieval import RetrievedPaper, retrieve
 
@@ -300,18 +300,28 @@ def report_retrieval(probes: list[Probe], report: Report) -> None:
 # --- report 2 -------------------------------------------------------------------------
 
 
+def cited_sources(probe: Probe, t: float) -> list[RetrievedPaper]:
+    """Exactly what `/ask` would return in `sources` at this threshold.
+
+    Modelling the gate alone would overstate a large `k`: `fit_context` drops the tail once
+    the context budget runs out, and a gold paper dropped there is never seen by the model
+    and never cited. At k=5 nothing trims; at k=10 two thirds of questions do.
+    """
+    relevant = [hit for hit in probe.hits[: settings.retrieval_top_k] if hit.score >= t]
+    return fit_context(relevant, max_chars=settings.max_context_chars)
+
+
 def score_threshold(probes: list[Probe], t: float) -> dict[str, float]:
-    """What the gate in qa.py would do at `t`.
+    """What `/ask` would do at `t`, computed through the code that ships.
 
     It refuses when nothing in the top-k clears the threshold, so with descending scores a
     question is answered exactly when its top-1 clears — and answered *usefully* only when
-    the gold paper is itself inside the top-k and above the line.
+    the gold paper survives into the sources.
     """
     positives = [p for p in probes if p.row.is_positive]
     negatives = [p for p in probes if not p.row.is_positive]
-    k = settings.retrieval_top_k
     answered = [p for p in positives if p.top1 >= t]
-    correct = [p for p in positives if p.rank and p.rank <= k and p.gold_score >= t]
+    correct = [p for p in positives if any(s.arxiv_id == p.row.gold for s in cited_sources(p, t))]
     return {
         "answered": len(answered) / len(positives) if positives else 0.0,
         "correct": len(correct) / len(positives) if positives else 0.0,
