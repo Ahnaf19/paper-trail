@@ -32,7 +32,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 from loguru import logger
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import settings
@@ -46,7 +46,10 @@ from app.services.prompts import NO_ANSWER, fit_context
 from app.services.qa import AnswerResult, answer_question
 from app.services.retrieval import RetrievedPaper, retrieve
 
-MAX_K = 20  # deepest rank the reports quote; bounds one query per question
+# Deep enough to rank the gold paper for MRR, and never shallower than the slice `/ask`
+# actually uses: `cited_sources` reads `hits[:RETRIEVAL_TOP_K]` out of this list, so raising
+# the config ceiling must widen the probe rather than silently truncate the result.
+MAX_K = max(20, settings.retrieval_top_k)
 RECALL_AT = (1, 3, 5, 10, 20)
 
 # The sweep prints a coarse grid for legibility and searches a fine one for the recommendation.
@@ -221,7 +224,7 @@ async def report_coverage(
         .scalars()
         .all()
     )
-    live_papers = (await session.execute(select(Paper.arxiv_id))).scalars().all()
+    live_papers = (await session.execute(select(func.count()).select_from(Paper))).scalar_one()
 
     lines = [
         heading("0. COVERAGE"),
@@ -229,10 +232,10 @@ async def report_coverage(
     ]
     if meta:
         built = meta.get("corpus", {})
-        matches = built.get("papers") == len(live_papers)
+        matches = built.get("papers") == live_papers
         lines += [
             f" built against     {built.get('papers')} papers, newest {built.get('newest_updated')}",
-            f" this corpus       {len(live_papers)} papers"
+            f" this corpus       {live_papers} papers"
             f"{'   ✓ same corpus' if matches else '   ✗ DIFFERENT CORPUS'}",
         ]
     found = len(present)
@@ -251,7 +254,7 @@ async def report_coverage(
         "negatives": len(negatives),
         "labelled_present": found,
         "labelled_wanted": len(wanted),
-        "corpus_papers": len(live_papers),
+        "corpus_papers": live_papers,
         "built_against": meta.get("corpus") if meta else None,
     }
     return [r for r in rows if not r.is_positive or r.gold in present]
@@ -460,10 +463,7 @@ async def judge_refusal(llm: OpenAICompatibleClient, question: str, answer: str)
 
 
 async def ask_with_retry(
-    session: AsyncSession,
-    row: Row,
-    embedder: FastEmbedEmbedder,
-    llm: OpenAICompatibleClient,
+    row: Row, embedder: FastEmbedEmbedder, llm: OpenAICompatibleClient
 ) -> AnswerResult:
     """Retry a degraded answer rather than scoring it.
 
@@ -471,19 +471,22 @@ async def ask_with_retry(
     which is right for a caller but wrong for an eval: a rate-limited call is an infrastructure
     event, not a behaviour. Scored as-is it reads as "the model answered a question it should
     have refused" — contaminating the one number this report exists for.
+
+    A session per attempt, not one for the run: `answer_question` holds its transaction across
+    the LLM call, and a session spanning all 64 rows would pin one open for twenty minutes —
+    long enough to block DDL on `paper` and `embedding`.
     """
-    result = await answer_question(session, row.question, embedder, llm)
     for attempt in (1, 2, 3):
-        if not result.degraded:
+        async with AsyncSessionLocal() as session:
+            result = await answer_question(session, row.question, embedder, llm)
+        if not result.degraded or attempt == 3:
             return result
         logger.warning("{} attempt {}: generation degraded, backing off", row.id, attempt)
         await asyncio.sleep(20 * attempt)
-        result = await answer_question(session, row.question, embedder, llm)
     return result
 
 
 async def report_end_to_end(
-    session: AsyncSession,
     rows: list[Row],
     embedder: FastEmbedEmbedder,
     llm: OpenAICompatibleClient,
@@ -499,7 +502,7 @@ async def report_end_to_end(
     for index, row in enumerate(rows):
         if index:
             await asyncio.sleep(pause)
-        result = await ask_with_retry(session, row, embedder, llm)
+        result = await ask_with_retry(row, embedder, llm)
         if result.degraded:
             degraded += 1
             continue
@@ -615,20 +618,22 @@ async def main() -> int:
     )
 
     embedder = FastEmbedEmbedder()
+    # The database work is over in seconds; report 3 then runs for twenty minutes against the
+    # LLM. Closing here keeps a transaction from spanning both.
     async with AsyncSessionLocal() as session:
         rows = await report_coverage(session, rows, meta, report)
         probes = await probe_all(session, rows, embedder)
-        report_retrieval(probes, report)
-        report_sweep(probes, report)
+    report_retrieval(probes, report)
+    report_sweep(probes, report)
 
-        if args.with_llm:
-            llm = OpenAICompatibleClient()
-            if not llm.configured:
-                print("\nLLM_API_KEY is not set — skipping report 3.")
-            else:
-                sampled = sample_for_e2e(rows, args.e2e_positives)
-                await report_end_to_end(session, sampled, embedder, llm, args.pause, report)
-                await llm.aclose()
+    if args.with_llm:
+        llm = OpenAICompatibleClient()
+        if not llm.configured:
+            print("\nLLM_API_KEY is not set — skipping report 3.")
+        else:
+            sampled = sample_for_e2e(rows, args.e2e_positives)
+            await report_end_to_end(sampled, embedder, llm, args.pause, report)
+            await llm.aclose()
 
     report.data["config"] = {
         "relevance_threshold": settings.relevance_threshold,

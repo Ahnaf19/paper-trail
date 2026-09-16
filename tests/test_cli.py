@@ -62,3 +62,23 @@ def test_no_category_explains_what_to_type(report):
     assert "paper ingest -c cs.AI -c cs.CL" in result.stderr  # a copyable example
     assert "arxiv.org/category_taxonomy" in result.stderr  # where codes come from
     assert "no documented 'everything' query" in result.stderr  # why there is no default
+
+
+def test_a_truncated_run_says_the_gap_was_left_open(report):
+    """The watermark guard is invisible unless the run says so — the mark did not move, and
+    an operator who does not know that will not re-run to close the gap."""
+    report(pages_fetched=6, papers_seen=1200, inserted=1200, embedded=1200, gap_left_open=True)
+
+    result = runner.invoke(cli.app, ["ingest", "-c", "cs.AI"])
+
+    assert result.exit_code == 0
+    assert "[gap left open]" in result.stderr
+
+
+def test_a_complete_run_says_nothing_about_gaps(report):
+    """The counterpart: the suffix must not appear when the mark did advance."""
+    report(pages_fetched=6, papers_seen=1200, inserted=1200, embedded=1200)
+
+    result = runner.invoke(cli.app, ["ingest", "-c", "cs.AI"])
+
+    assert "gap left open" not in result.stderr

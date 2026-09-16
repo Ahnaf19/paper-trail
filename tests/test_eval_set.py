@@ -24,7 +24,9 @@ from scripts.evaluate import (
     score_threshold,
 )
 
-GOLDEN = Path("eval/golden.jsonl")
+# Anchored to this file, not the cwd: `pytest` from tests/ or an IDE runner with its own
+# working directory would otherwise red five tests with FileNotFoundError.
+GOLDEN = Path(__file__).resolve().parents[1] / "eval" / "golden.jsonl"
 
 
 def hit(arxiv_id: str, score: float) -> RetrievedPaper:

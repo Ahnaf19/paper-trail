@@ -470,6 +470,9 @@ app/
   utils/             small helpers with no domain knowledge
 alembic/versions/    migrations, generated from `app/models` and read before committing
 tests/               pytest — no network, no LLM, no model download
+scripts/             build_golden_set.py (one-off, needs a key) · evaluate.py (the runner)
+eval/                golden.jsonl + its corpus fingerprint · RESULTS.md · one JSON per run
+docs/                api.md — the endpoint reference
 ```
 
 ## Known limitations
