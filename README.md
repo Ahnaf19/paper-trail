@@ -85,23 +85,21 @@ docker compose exec api paper wipe                                # delete every
 ```
 
 > [!NOTE]
-> **`--max` rounds up to a whole page.** The limit is checked _after_ each page commits and
-> pages are 200, so any value in 1,001–1,200 yields exactly 1,200 papers. The default is
-> written as `1200` so the flag and the resulting corpus agree — headroom over the brief's
-> "at least 1,000" without a number that needs explaining.
+> **`--max` rounds up to a whole page.** Checked _after_ each page commits, and pages are 200
+> — so any value in 1,001–1,200 yields exactly 1,200 papers.
 
-- **`-c` is required and repeatable.** The query is assembled from `cat:` clauses, so with
-  no category there is no `search_query` to send — arXiv has no "everything" query. Omitting
-  it exits 2 with an example to copy. Valid codes:
-  [arXiv's taxonomy](https://arxiv.org/category_taxonomy). Loaded ones:
-  `GET /stats/top-categories?n=110` — the corpus below spans 104.
-- **Re-running is safe and cheap.** Papers upsert on `arxiv_id` — a database constraint, not application logic. Sorted by last-update descending, so one high-water mark catches new _and_ revised papers; the scan stops once a whole page predates the mark.
-- **A truncated run does not fake progress.** The mark advances only when the walk came
-  down far enough to meet the previous one. If `--max` stops it short, the span in between
-  was never fetched — so the mark stays put and the run ends `[gap left open]`. Advancing
-  over that span would bury it below the next run's stop threshold permanently. Re-run with
-  a larger `--max`, or `--full`.
-- **Deliberately synchronous.** arXiv's Terms of Use require "a single connection at a time", so there is no concurrency to win — async would add ceremony for zero throughput.
+- **`-c` is required and repeatable.** The query is built from `cat:` clauses, so with no
+  category there is no `search_query` to send — arXiv has no "everything" query. Omitting it
+  exits 2 with a copyable example. Codes: [arXiv's taxonomy](https://arxiv.org/category_taxonomy);
+  loaded ones via `GET /stats/top-categories?n=110`, which spans 104 here.
+- **Re-running is safe and cheap.** Papers upsert on `arxiv_id`, a database constraint rather
+  than application logic. The feed is sorted by last-update descending, so one high-water mark
+  catches new _and_ revised papers and the scan stops once a whole page predates it.
+- **A truncated run does not fake progress.** The mark advances only if the walk reached back
+  to the previous one. If `--max` stops it short, the span between was never fetched — the mark
+  stays put and the run ends `[gap left open]`. Re-run with a larger `--max`, or `--full`.
+- **Deliberately synchronous.** arXiv's Terms of Use require "a single connection at a time",
+  so there is no concurrency to win.
 
 ## Data model
 
@@ -167,9 +165,9 @@ ingest_state
 - **The watermark is keyed by the category set.** Ingest `cs.AI`, then re-run adding `cs.LG`:
   a shared watermark would stop early and silently skip every older `cs.LG` paper. A key
   mismatch forces a full scan instead.
-- **Embeddings are written in the paper's transaction.** A crash between the two is not
-  handled — it is impossible. That is why pgvector, not a separate vector store, which would
-  reintroduce a dual-write problem transactions no longer cover.
+- **Embeddings are written in the paper's transaction** — a crash between the two is not
+  handled, it is impossible. Hence pgvector rather than a separate vector store and its
+  dual-write problem.
 
 ### No indexes beyond the primary and unique keys
 
@@ -183,11 +181,11 @@ themselves, on the 2,370-paper corpus. Every plan is a sequential scan:
 | `papers-over-time` (month, all)           | 7.8 ms   |
 | `/ask` retrieval — top-5 of 2,370 vectors | 2.8 ms   |
 
-**The aggregations don't want an index.** An index buys _selectivity_; a `GROUP BY` over the
-whole corpus has none. Postgres reads every row regardless, so a seq scan is the right plan.
+**Aggregations gain nothing.** An index buys selectivity; a `GROUP BY` over the whole corpus
+has none — Postgres reads every row regardless.
 
-**Vector search would genuinely be faster with one** — that's the real trade. Building HNSW
-over the same 2,370 vectors (`EXPLAIN ANALYZE`, warm median of seven):
+**Vector search would be faster.** HNSW over the same 2,370 vectors (`EXPLAIN ANALYZE`, warm
+median of seven):
 
 |            | Exact (today) | HNSW                        |
 | ---------- | ------------- | --------------------------- |
@@ -196,10 +194,9 @@ over the same 2,370 vectors (`EXPLAIN ANALYZE`, warm median of seven):
 | Build      | —             | 410 ms                      |
 | Index size | —             | 4752 kB, on a 4760 kB table |
 
-8.7× faster, and still wrong here: **the 1 ms it saves sits inside a request whose LLM call
-takes 1–3 seconds.** You would trade a correctness guarantee for well under 0.1% of end-to-end
-latency, and store an index the size of the table. It earns its place when the scan itself
-becomes perceptible — around 100k vectors, not 2.4k.
+8.7× faster, and not worth it: the 1 ms saved sits inside a request whose LLM call takes 1–3
+seconds — under 0.1% of end-to-end latency, for an approximate result and an index the size of
+the table. Worth revisiting around 100k vectors.
 
 ## APIs
 
@@ -225,18 +222,17 @@ $ curl -s 'localhost:8000/stats/top-categories?n=3'
 
 ## Asking questions — `POST /ask`
 
-- Embed the question → retrieve the nearest abstracts → answer from those alone.
-- Shapes and examples are in [`docs/api.md`](docs/api.md#post-ask)
+Embed the question → retrieve the nearest abstracts → answer from those alone. Shapes and
+examples: [`docs/api.md`](docs/api.md#post-ask).
 
 > [!IMPORTANT]
-> **The relevance check runs before the model is called.** Below the threshold the LLM is
-> never contacted — so refusing is a property of control flow, not an instruction the model
-> might ignore, and an off-topic question costs zero tokens.
+> **The relevance check runs before the model is called.** Refusing is control flow, not an
+> instruction the model might ignore — and an off-topic question costs zero tokens.
 
 ### Refusing to answer: two gates
 
 A single cosine threshold cannot separate "this corpus answers that" from "it doesn't".
-Two independent gates do the job, and each catches what the other misses:
+Two gates, each catching what the other misses:
 
 |     | Gate                                                     | Catches                | Cost         |
 | --- | -------------------------------------------------------- | ---------------------- | ------------ |
@@ -254,18 +250,14 @@ Measured on this corpus:
             the Raft consensus algorithm.", "sources": [...5 papers...]}
 ```
 
-Gate 1 is deterministic but imprecise; gate 2 is precise but probabilistic. Neither is
-sufficient alone, which is why both are there — and the split is measured, not assumed: across
-24 must-refuse questions, **22 stop at gate 1, 2 at gate 2, and none are answered**
+Gate 1 is deterministic but imprecise; gate 2 is precise but probabilistic. The split is
+measured: across 24 must-refuse questions, **22 stop at gate 1, 2 at gate 2, none are answered**
 ([Evaluation](#evaluation)).
 
 ### Where the threshold comes from
 
-The threshold is the one constant here that cannot be reasoned about.
-
-> [!NOTE]
-> It is a property of the embedding model _and_ the corpus, so it is **measured** against a
-> labelled dataset — see [Evaluation](#evaluation) for the method.
+A property of the embedding model _and_ the corpus, so it is measured against a labelled set
+rather than chosen — method in [Evaluation](#evaluation).
 
 | t        | correct answers | false passes | of which adjacent-CS |
 | -------- | --------------- | ------------ | -------------------- |
@@ -275,26 +267,24 @@ The threshold is the one constant here that cannot be reasoned about.
 | 0.78     | 91/97           | 2/24         | 2/14                 |
 | 0.80     | 87/97           | 0/24         | 0/14                 |
 
-Retrieval puts the correct paper inside the top-5 for **92 of 97** questions, so 92 is a
-**ceiling no threshold can beat** — a gate cannot repair retrieval, only avoid discarding what
-it found. Everything from 0.70 to 0.76 sits at that ceiling, so the positives cannot separate
-those values and the negatives decide. `RELEVANCE_THRESHOLD = 0.75` is the lowest value
+Retrieval puts the correct paper in the top-5 for **92 of 97** questions — a ceiling no
+threshold can beat, since a gate cannot repair retrieval, only avoid discarding it. Everything
+from 0.70 to 0.76 sits at that ceiling, so the negatives decide. `0.75` is the lowest value
 reaching the fewest false passes.
 
 > [!WARNING]
 > **The remaining overlap is structural, not a tuning failure.** `bge-small` encodes what a
 > text is _about_, not whether it _contains an answer_.
 
-The two questions that still clear gate 1 are real computer science this corpus has never seen:
+The two that still clear gate 1 are real computer science absent from this corpus:
 
 | Question                                                             | top-1 | Nearest paper in the corpus                        |
 | -------------------------------------------------------------------- | ----- | -------------------------------------------------- |
 | _"What guarantees does the Raft consensus algorithm provide?"_       | 0.799 | Algorithmic stability via ensembling                |
 | _"What problem does consistent hashing solve in a distributed cache?"_ | 0.796 | Shared KV Caching for Replicated 27B Inference      |
 
-Raising the threshold until both are refused costs **five** real answers — which is exactly
-why gate 2 exists rather than a higher gate 1. A cross-encoder re-ranker is the real fix, and
-the eval is what would prove it worked.
+Refusing both requires `t ≥ 0.80`, which costs **five** real answers — hence gate 2 rather
+than a higher gate 1. A cross-encoder re-ranker is the real fix.
 
 ### The model id
 
@@ -307,7 +297,7 @@ explicit message. The same applies to a timeout or a retired model id.
 
 ## Configuration
 
-Everything is an environment variable; nothing is hardcoded. `.env.example` lists them all.
+All configuration is environment variables; `.env.example` lists them.
 
 | Variable                              | Default                          | Notes                                                                                                        |
 | ------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------ |
@@ -323,13 +313,12 @@ Everything is an environment variable; nothing is hardcoded. `.env.example` list
 | `LOG_LEVEL`                           | `INFO`                           |                                                                                                              |
 
 > [!IMPORTANT]
-> **`LLM_API_KEY` is the only value you must supply**, and even without it everything works
-> except answer generation — `/ask` returns the retrieved papers and an explicit message.
-> Aggregations, ingestion and retrieval are unaffected.
+> **`LLM_API_KEY` is the only value you must supply.** Without it everything works except
+> answer generation — `/ask` returns the retrieved papers and an explicit message.
 
 ### Embeddings
 
-Computed **in this process** by [`fastembed`](https://github.com/qdrant/fastembed) library.
+Computed **in-process** by [`fastembed`](https://github.com/qdrant/fastembed).
 
 |         |                                                           |
 | ------- | --------------------------------------------------------- |
@@ -337,15 +326,13 @@ Computed **in this process** by [`fastembed`](https://github.com/qdrant/fastembe
 | Size    | 63 MB of weights, baked into the image at build time      |
 | Runtime | ONNX Runtime — **no PyTorch**, which would add ~800 MB    |
 
-- **Local, because an embedding API would be a second key, a per-call cost, a rate limit and
-  a network hop** on the hottest path in the system — for a model small enough to run inline.
-- `LLM_API_KEY` is for _generation_ only. There is no embedding key.
-- A running container never fetches weights. Outside Docker `fastembed` downloads them on
-  first use, which is why the first local run is slower.
-
-> [!TIP]
-> The model is warmed at application startup, not on the first request — so the cost is
-> visible in the logs and gated by the container healthcheck.
+- **Local**, because a hosted embedder means a second key, a per-call cost, a rate limit and
+  a network hop on the hottest path — for a model small enough to run inline.
+- `LLM_API_KEY` is for _generation_ only; there is no embedding key.
+- A running container never fetches weights. Outside Docker, `fastembed` downloads them on
+  first use — which is why the first local run is slower.
+- The model is warmed at startup, not on the first request, so the cost is visible in the logs
+  and gated by the healthcheck.
 
 ## Tests
 
@@ -355,124 +342,107 @@ docker compose up -d db    # Postgres + pgvector on :5432 — the only prerequis
 uv sync && uv run pytest
 ```
 
-- 125 tests that **never touch the network, an LLM, or download a model**
-- They run against a throwaway `arxiv_test` database, so your corpus is untouched.
-- The embedding provider and the LLM client both sit behind small interfaces, and the suite injects fakes before the app starts.
-- The test database is created and migrated by the real Alembic migrations, so the schema under test is the schema that ships.
-- They are aimed at what would actually break: XML parsing against a saved real capture,
-  idempotent re-ingest, staleness detection, aggregation counts on seeded data, and the
-  no-good-match path.
+127 tests. No network, no LLM, no model download — the embedding provider and LLM client sit
+behind interfaces the suite fakes. They run against a throwaway `arxiv_test` database built by
+the real migrations, so the schema under test is the schema that ships.
+
+Aimed at what breaks: XML parsing against a saved capture, idempotent re-ingest, staleness
+detection, the watermark's gap guard, aggregation counts on seeded data, and the no-match path.
 
 ## Evaluation
 
-The brief did not ask for tests either; there are 125, because tests are what make code
-verifiable. The same argument applies to the RAG path — and no test suite tells you whether
-the _right_ papers come back, or what the relevance gate costs.
+Tests prove the code runs. They say nothing about whether the right papers come back, or what
+the relevance gate costs.
 
 ```bash
 uv run python scripts/evaluate.py             # retrieval + threshold sweep — offline, free
 uv run python scripts/evaluate.py --with-llm  # + end-to-end answer/refuse behaviour
 ```
 
-Run history and before/after comparisons: [`eval/RESULTS.md`](eval/RESULTS.md).
+Run history and before/after: [`eval/RESULTS.md`](eval/RESULTS.md).
 
 ### The dataset
 
-[`eval/golden.jsonl`](eval/golden.jsonl) — 121 committed, human-readable rows, built by
+[`eval/golden.jsonl`](eval/golden.jsonl) — 121 rows, committed, built by
 [`scripts/build_golden_set.py`](scripts/build_golden_set.py):
 
-| Kind                                            | n   | Source           |
-| ----------------------------------------------- | --- | ---------------- |
-| Positives — `big` band (category ≥ 100 papers)  | 38  | generated        |
-| Positives — `mid` band (10–99)                  | 34  | generated        |
-| Positives — `thin` band (< 10)                  | 25  | generated        |
-| Negatives — adjacent computer science           | 14  | **hand-written** |
-| Negatives — off-topic                           | 10  | **hand-written** |
+| Kind                                           | n   | Source           |
+| ---------------------------------------------- | --- | ---------------- |
+| Positives — `big` band (category ≥ 100 papers) | 38  | generated        |
+| Positives — `mid` band (10–99)                 | 34  | generated        |
+| Positives — `thin` band (< 10)                 | 25  | generated        |
+| Negatives — adjacent computer science          | 14  | **hand-written** |
+| Negatives — off-topic                          | 10  | **hand-written** |
 
 > [!IMPORTANT]
-> **Positives are authored paper-first**: sample a paper, _then_ have the model write a
-> question its abstract answers. Doing it the other way round — asking a question and
-> labelling whatever retrieval returned — makes `recall@5 = 1.0` by construction.
+> **Positives are authored paper-first** — sample a paper, then generate a question its
+> abstract answers. The reverse (ask, then label what retrieval returned) makes
+> `recall@5 = 1.0` by construction.
 
-Sampling is stratified by each paper's **rarest** category. Five categories hold most of this
-corpus, so a uniform sample would only test retrieval where it is densest. Negatives stay
-hand-written because asking a model for "questions about things this corpus does not contain"
-reliably produces things it does.
+Stratified by each paper's **rarest** category: five categories hold most of the corpus, so a
+uniform sample would test retrieval only where it is densest. Negatives are hand-written —
+generating "questions about things absent from this corpus" produces things present in it.
 
-### Retrieval  (97 positives, 2,370 papers, 16 Sep 2026)
+### Retrieval  (97 positives · 2,370 papers · 16 Sep 2026)
 
-| Metric    | Overall   |
-| --------- | --------- |
-| recall@1  | 0.897     |
-| recall@5  | **0.948** |
-| recall@10 | 0.979     |
-| MRR@20    | 0.918     |
+| Metric    | Overall   |     | Band                 | n   | recall@1 | recall@5 | MRR   |
+| --------- | --------- | --- | -------------------- | --- | -------- | -------- | ----- |
+| recall@1  | 0.897     |     | `big` (≥ 100 papers) | 38  | 0.947    | 0.947    | 0.955 |
+| recall@5  | **0.948** |     | `mid` (10–99)        | 34  | 0.824    | 0.971    | 0.875 |
+| recall@10 | 0.979     |     | `thin` (< 10)        | 25  | 0.920    | 0.920    | 0.920 |
+| MRR@20    | 0.918     |     |                      |     |          |          |       |
 
-| Band                    | n   | recall@1 | recall@5 | MRR   |
-| ----------------------- | --- | -------- | -------- | ----- |
-| `big` (≥ 100 papers)    | 38  | 0.947    | 0.947    | 0.955 |
-| `mid` (10–99)           | 34  | 0.824    | 0.971    | 0.875 |
-| `thin` (< 10)           | 25  | 0.920    | 0.920    | 0.920 |
-
-Reported per band as well as overall, because thin categories are deliberately over-sampled —
-the overall figure is not what real traffic would see. The `mid` band has the worst `recall@1`
-and the best `recall@5`, which is what topic confusion looks like: the right paper is found,
-just not first. The `thin` band is flat across every `k`, so for a rare category it is rank 1
-or nowhere.
+Bands are reported separately because thin categories are over-sampled — the overall figure is
+not what real traffic sees. `mid` has the worst `recall@1` and the best `recall@5`: the right
+paper is found, just not first. `thin` is flat across every `k` — rank 1 or nowhere.
 
 > [!NOTE]
 > **Not precision@k.** With one relevant paper per question, `precision@5` cannot exceed 0.2
-> however perfect the ranking — it measures the value of `k`, not the system. `recall@k` here
-> is hit-rate@k.
+> however perfect the ranking. `recall@k` here is hit-rate@k.
 
 ### End to end, through `/ask`
 
-Every must-refuse question runs; positives are a fixed-seed sample of 40, since report 1 already
-measures their retrieval exactly and for nothing.
+All 24 must-refuse questions, plus a fixed-seed sample of 40 positives.
 
-| Positives (40 sampled)         |       | Must-refuse (all 24)              |           |
-| ------------------------------ | ----- | --------------------------------- | --------- |
-| answered, correct paper cited  | 37/40 | refused at gate 1 — 0 LLM calls   | 22/24     |
-| answered, correct paper missed | 3/40  | refused at gate 2 — 1 LLM call    | 2/24      |
-| **wrongly refused**            | **0/40** | **answered anyway**            | **0/24**  |
+| Positives (40)                 |          | Must-refuse (24)                |          |
+| ------------------------------ | -------- | ------------------------------- | -------- |
+| answered, correct paper cited  | 37/40    | refused at gate 1 — 0 LLM calls | 22/24    |
+| answered, correct paper missed | 3/40     | refused at gate 2 — 1 LLM call  | 2/24     |
+| **wrongly refused**            | **0/40** | **answered anyway**             | **0/24** |
 
-Not one out-of-corpus question got an answer. The sweep predicted exactly which two would clear
-gate 1 — Raft and consistent hashing — and the grounded prompt refused both.
+The sweep named both gate-1 survivors in advance — Raft and consistent hashing — and the
+grounded prompt refused both.
 
-It also validates the cheap report against the expensive one: report 2 predicts 92/97 = 94.8%
-of positives answerable with the right paper cited, and the live run returns 37/40 = 92.5%.
-Three questions apart, within sampling noise — so the offline sweep can stand in for a
-20-minute LLM run when iterating.
+The offline sweep predicts 92/97 = 94.8% answerable with the right paper cited; live gives
+37/40 = 92.5%. Within sampling noise, so the free report substitutes for the 20-minute one
+while iterating.
 
 ### What this replaced
 
-Threshold selection began as *"find a gap between three groups of scores"*. That method has no
-answer when the groups overlap, and they do:
+Threshold selection began as *"find a gap between three score ranges"*, which has no answer
+when the ranges overlap — and they do.
 
-| | Before — range separation | After — labelled classification |
-| --- | --- | --- |
-| Data | 23 hand-written questions | 121 rows, 97 of them generated paper-first |
-| Question asked | is there a gap? | what does each threshold cost? |
-| Output | `NO SEPARABLE WINDOW` — no recommendation | `0.75`, derived from a stated rule |
-| `RETRIEVAL_TOP_K` | a convention | a measured choice, priced at +2.1pp for +34% context |
+|                    | Before — range separation                | After — labelled classification            |
+| ------------------ | ---------------------------------------- | ------------------------------------------ |
+| Data               | 23 hand-written questions                | 121 rows, 97 generated paper-first         |
+| Question asked     | is there a gap?                          | what does each threshold cost?             |
+| Output             | `NO SEPARABLE WINDOW`, no recommendation | `0.75`, derived from a stated rule         |
+| `RETRIEVAL_TOP_K`  | a convention                             | measured: +2.1pp for +34% context          |
 
-The overlap did not go away. It stopped being a dead end and became a visible trade-off curve.
+The overlap remains. It is now a trade-off curve instead of a dead end.
 
-### Limits, stated plainly
+### Limits
 
-- **Recall here is an upper bound.** The questions were generated from the abstracts they
-  point at, so they share vocabulary with them. A human-written question would score lower.
-  The generator rejects any question lifting five consecutive words from its source title,
-  which narrows the gap without closing it.
-- **Single-label ground truth.** Each question names exactly one correct paper, though others
-  may be relevant. That rules out `precision@k` and `nDCG` honestly rather than reporting them
-  wrongly.
-- **The set is bound to its corpus.** arXiv has no "as of" query, so a corpus ingested on
-  another day is a different corpus. `golden.meta.json` records the fingerprint and report 0
-  reports missing papers as **skipped**, never as retrieval failures.
+- **Recall is an upper bound.** Questions were generated from the abstracts they point at, so
+  they share vocabulary. The generator rejects any lifting five consecutive title words, which
+  narrows the gap without closing it.
+- **Single-label ground truth.** One correct paper per question, though others may be relevant
+  — which is what rules out `precision@k` and `nDCG`.
+- **Bound to its corpus.** arXiv has no "as of" query, so a corpus ingested another day is a
+  different corpus. `golden.meta.json` records the fingerprint; missing papers are reported
+  **skipped**, never as retrieval failures.
 - **Answer text is not scored.** Faithfulness and answer relevance need an LLM judge validated
-  against human labels, or a framework like RAGAS. The end-to-end report checks that the right
-  paper was cited and that a must-refuse question was refused — not how good the prose is.
+  against human labels, or RAGAS. The end-to-end report checks citation and refusal, not prose.
 
 ## Project layout
 
@@ -497,58 +467,46 @@ docs/                api.md — the endpoint reference
 
 ## Known limitations
 
-These are deliberate, and stated rather than hidden.
-
-- **Answers come from abstracts, not papers.** A single arXiv API response carries the title,
-  authors, categories, dates and abstract — never the full text. So _"what learning rate did
-  they use?"_ lives in a PDF we never fetch. This bounds what `/ask` can ever be right about.
+- **Answers come from abstracts, not papers.** An arXiv API response carries title, authors,
+  categories, dates and abstract — never full text. _"What learning rate did they use?"_ is
+  outside what `/ask` can ever be right about.
 - **Author identity is the name string.** arXiv publishes no author IDs, so two researchers
-  sharing a name are one row in `top-authors`. Cheap to state, expensive to fix properly.
-- **Indirect prompt injection is bounded, not eliminated.** Abstracts are third-party text
-  entering an LLM prompt; one containing _"ignore previous instructions"_ was tested and the
-  model answered from the legitimate content instead. But the real protection is
-  architectural: **the model has no tools, no database access and no network**, so the worst
+  sharing a name are one row in `top-authors`.
+- **Indirect prompt injection is bounded, not eliminated.** An abstract containing _"ignore
+  previous instructions"_ was tested; the model answered from the legitimate content. The real
+  protection is architectural — **no tools, no database access, no network** — so the worst
   case is a wrong answer, never an action.
-- **The relevance threshold does not separate cleanly.** Real computer science this corpus
-  lacks can outscore answerable questions — _"what guarantees does Raft provide?"_ reaches
-  0.799 by matching _"Algorithmic stability via ensembling"_. Measured cost of closing the
-  gap: 2 of 24 must-refuse questions clear gate 1, and raising the threshold until none do
-  would refuse 5 real answers. The grounded prompt catches the residue, but that second gate
-  is probabilistic where the first is not. A cross-encoder re-rank is the real fix.
-- **A bounded ingest cannot backfill.** `--max` stops the walk, and if it stops above the
-  watermark the span between was never fetched. The mark refuses to advance over that gap and
-  the run reports `[gap left open]`, so the corpus never silently loses a window — but closing
-  it needs a larger `--max` chosen by hand. See [what I would do with more time](#what-i-would-do-with-more-time).
-- **The evaluation has its own limits** — synthetic positives, single-label ground truth, and
-  coupling to the corpus it was built on. Stated in full under [Evaluation](#evaluation).
-- **A refusal from the second gate still returns sources.** When the model declines, those
-  five papers are what was searched, not what grounded an answer — the response shape cannot
-  currently say which.
+- **The threshold does not separate cleanly.** 2 of 24 must-refuse questions clear gate 1;
+  refusing them costs 5 real answers. Gate 2 catches the residue, but probabilistically where
+  gate 1 is deterministic. A cross-encoder re-rank is the fix.
+- **A bounded ingest cannot backfill.** If `--max` stops the walk above the watermark, the mark
+  refuses to advance and the run reports `[gap left open]` — nothing is lost silently, but
+  closing the gap needs a larger `--max` chosen by hand.
+- **A gate-2 refusal still returns sources.** Those papers are what was searched, not what
+  grounded an answer; the response shape cannot currently distinguish the two.
+- **The evaluation has its own limits** — synthetic positives, single-label ground truth,
+  corpus coupling. Detailed under [Evaluation](#evaluation).
 - **No ANN index on the vectors.** Measured trade-off in [Data model](#no-indexes-beyond-the-primary-and-unique-keys).
-- **The corpus is a snapshot.** `paper ingest` re-run picks up new and revised papers via
-  the watermark, but nothing schedules it.
+- **The corpus is a snapshot.** Re-running `paper ingest` picks up new and revised papers;
+  nothing schedules it.
 
 ## What I would do with more time
 
-Roughly in the order I would pick them up.
+In the order I would pick them up.
 
-1. **Resumable backfill.** The incremental path keeps a corpus *current*; it cannot catch one
-   *up*. A run stopped by `--max` above the watermark leaves a span unfetched, and the
-   watermark guard correctly refuses to advance over it — but the remedy is manual, a larger
-   `--max`. The real fix is a second piece of state: a floor alongside the ceiling, so a
-   bounded run resumes where the last one stopped instead of restarting at the top of the feed.
-2. **Schedule the ingest.** The incremental path is built and cheap — a re-run with nothing
-   new costs one throttled request per page — but nothing triggers it. A cron container or
-   an external scheduler is a small change.
-3. **Gap-fill the time series behind a flag.** Periods with no papers are currently omitted.
-   That is honest, but a `?fill=true` using `generate_series` would suit some charts better.
-4. **A read-only database role for the API.** Both read paths only `SELECT`, but they connect
-   as the owner. Splitting the roles is the real hardening step and costs almost nothing.
-5. **Re-embed in batches as a separate command.** Changing the embedding model currently
-   means re-running ingest; a `paper reembed` working purely from stored text would be
-   clearer and would not touch arXiv at all.
-6. **Harden against prompt injection beyond the architectural bound.** Today the model has
-   no tools, so the worst case is a wrong answer. If it ever gained tools, the delimiting and
-   the system prompt alone would not be enough, and this would need real work.
-7. **An ANN index, once measured.** Exact search is 1.2 ms over 2,370 vectors. At ~100k it
-   would be worth benchmarking HNSW against the recall it costs — but not before.
+1. **Resumable backfill.** The incremental path keeps a corpus current; it cannot catch one up.
+   A run stopped by `--max` above the watermark leaves a span unfetched, and the guard refuses
+   to advance over it — but the remedy is manual. The fix is a second piece of state: a floor
+   alongside the ceiling, so a bounded run resumes instead of restarting at the top of the feed.
+2. **Schedule the ingest.** The incremental path is built and cheap; nothing triggers it. A
+   cron container or external scheduler.
+3. **A cross-encoder re-rank over the top-k.** The direct fix for the two false passes, and the
+   eval already exists to prove it worked.
+4. **A read-only database role for the API.** Both read paths only `SELECT` but connect as the
+   owner. Cheap hardening.
+5. **Re-embed as a separate command.** Changing the embedding model currently means re-running
+   ingest; `paper reembed` would work from stored text and never touch arXiv.
+6. **Gap-fill the time series behind a flag.** Empty periods are omitted; `?fill=true` using
+   `generate_series` would suit some charts.
+7. **An ANN index, once it earns one.** Exact search is 1.2 ms over 2,370 vectors — worth
+   benchmarking HNSW around 100k, not before.
