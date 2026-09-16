@@ -67,15 +67,25 @@ RETAINED_OF_CEILING = 0.95
 
 BAR_WIDTH = 34
 
-# Report 3 pacing, against Groq's free tier: `x-ratelimit-limit-tokens` is 8000 a minute. An
-# `/ask` call carries the retrieved context, so it costs far more than a bare question --
-# ~1,930 prompt tokens (mean context 7,042 chars) plus ~450 of completion, of which most are
-# gpt-oss-20b's reasoning tokens. 8000 / 2380 = 3.4 calls a minute; 20 s leaves margin.
+# Report 3 pacing. Groq's free tier applies two token limits, and they bind at different
+# scales -- measure both before sizing a run:
+#
+#   8,000 tokens per MINUTE  paces a run. An `/ask` call carries the retrieved context, so it
+#       costs far more than a bare question: ~1,600 prompt tokens plus ~350 of completion,
+#       most of the latter being gpt-oss-20b's reasoning tokens. 8000 / 2000 = 4 calls a
+#       minute, so 20 s leaves margin. Reported in `x-ratelimit-limit-tokens`.
+#
+#   200,000 tokens per DAY   bounds the whole exercise, and is the one that actually bites.
+#       It appears in NO response header -- only in the body of the 429 -- so a run paced
+#       correctly against the per-minute bucket still dies partway through. Building the
+#       golden set costs ~100,000 of it; every `/ask` row here costs ~2,000 more.
 ASK_PAUSE_SECONDS = 20.0
 
-# All 24 negatives run -- they are the point of this report. Positives are sampled, because
-# their retrieval behaviour is already measured exactly, and for free, in report 1.
-E2E_POSITIVE_SAMPLE = 40
+# Every negative runs: they are the point of this report, and they are nearly free. Gate 1
+# refuses most of them before the model is ever called, so only the two that clear it cost
+# tokens. A positive costs a full call each, and their retrieval behaviour is already measured
+# exactly, and for nothing, in report 1 -- so positives are sampled against the daily budget.
+E2E_POSITIVE_SAMPLE = 10
 E2E_SEED = 20260916
 
 # One judge call per negative that clears the gate -- a handful, not a per-row cost. The

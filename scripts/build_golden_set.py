@@ -40,8 +40,10 @@ from app.services.llm import OpenAICompatibleClient
 
 SEED = 20260916  # fixed, so the same corpus yields the same set
 
-# Groq's free tier meters TOKENS, not requests: `x-ratelimit-limit-tokens` is 8000 per minute,
-# while `x-ratelimit-limit-requests` is 1000 per day and never binds here. One generation against
+# Groq's free tier meters TOKENS, not requests: `x-ratelimit-limit-tokens` is 8000 per minute
+# and there is a further 200,000 per DAY that no header reports -- it surfaces only in the
+# body of a 429. This script spends ~100,000 of that daily budget, so plan the evaluation
+# run in the same day's budget. `x-ratelimit-limit-requests` is 1000 per day and never binds. One generation against
 # the longest abstract in the corpus measured 999 total tokens -- 674 prompt + 325 completion, of
 # which 300 are gpt-oss-20b's reasoning tokens. 8000 / 1000 = 8 calls a minute. Raise it with
 # --pause 0 on a paid tier.
