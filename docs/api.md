@@ -197,13 +197,17 @@ those alone. Design and threshold calibration are in the [README](../README.md#w
 $ curl -s localhost:8000/ask -H 'content-type: application/json' \
     -d '{"question": "How can LLM agents reuse experience from earlier tasks?"}'
 {
-  "answer": "LLM agents can reuse experience from earlier tasks by explicitly extracting and
-             storing reusable knowledge from past interactions and then recalling it when
-             faced with new tasks. - **LifeMem** clusters accumulated interaction
-             trajectories into reusable skills...",
+  "answer": "LLM agents can reuse past experience by extracting reusable skills and
+             trajectories from their own interaction logs, and by pre-building reusable
+             artifacts during a study phase. In LifeMem (2609.12655) the agent clusters
+             accumulated trajectories by workflow, distils reusable skills, and recalls
+             them when solving a new task...",
   "sources": [
-    {"arxiv_id": "2609.12655", "title": "LifeMem: Enabling Lifelong Experience Reuse for LLM Agents", "score": 0.841},
-    {"arxiv_id": "2609.04280", "title": "EvoHarnessBench: Can Your Agents Keep Pace with an Evolving Harness?", "score": 0.7905}
+    {"arxiv_id": "2609.12655", "title": "LifeMem: Enabling Lifelong Experience Reuse for LLM Agents", "score": 0.8410},
+    {"arxiv_id": "2609.04280", "title": "EvoHarnessBench: Can Your Agents Keep Pace with an Evolving Harness?", "score": 0.7903},
+    {"arxiv_id": "2605.28108", "title": "Ask Now, Use Later: Benchmarking the Proactivity Gap in Long-Lived LLM Agents", "score": 0.7878},
+    {"arxiv_id": "2603.19896", "title": "Utility-Guided Agent Orchestration for Efficient LLM Tool Use", "score": 0.7873},
+    {"arxiv_id": "2609.10824", "title": "Studying Without a Syllabus: Task-Agnostic Environment Preprocessing", "score": 0.7860}
   ]
 }
 ```

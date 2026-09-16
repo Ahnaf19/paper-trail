@@ -46,19 +46,18 @@ curl -s -X POST localhost:8000/ask -H 'Content-Type: application/json' \
 
 // POST /ask
 {
-  "answer": "Early-stage LLM agents relied on very simple, retrieval-augmented memory
-             systems. These were designed mainly to store and recall facts, perform
-             multi-hop retrieval, and track time-based changes, but they did not organize
-             knowledge into structured hierarchies such as ledgers, to-do lists, or
-             trees... (2602.11243).",
+  "answer": "The abstracts suggest that early LLM agents used simple retrieval-augmented
+             memory. These systems could store and recall basic facts, perform multi-hop
+             retrieval, and track time-based changes, but they did not organize knowledge
+             into structured hierarchies (e.g. ledgers, trees, or to-do lists)... (2602.11243).",
   "sources": [
     {"arxiv_id": "2602.11243", "title": "Evaluating Memory Structure in LLM Agents",
-     "score": 0.8432},
-    {"arxiv_id": "2609.12808", "title": "K-Bench: A Benchmark for LLM Unlearning in
-      Agentic Deployments", "score": 0.7756},
-    {"arxiv_id": "2609.12436", "title": "LifeFuse-Mem: Lifecycle-Aware State Fusion...",
-     "score": 0.7716}
-    // ... 2 more, down to 0.7674
+     "score": 0.8425},
+    {"arxiv_id": "2605.28108", "title": "Ask Now, Use Later: Benchmarking the Proactivity
+      Gap in Long-Lived LLM Agents", "score": 0.8070},
+    {"arxiv_id": "2609.16053", "title": "Retrieval-Driven Memory Reconsolidation for
+      Long-Term LLM Agents", "score": 0.7926}
+    // ... 2 more, down to 0.7844
   ]
 }
 ```
@@ -256,7 +255,9 @@ Measured on this corpus:
 ```
 
 Gate 1 is deterministic but imprecise; gate 2 is precise but probabilistic. Neither is
-sufficient alone, which is why both are there.
+sufficient alone, which is why both are there — and the split is measured, not assumed: across
+24 must-refuse questions, **22 stop at gate 1, 2 at gate 2, and none are answered**
+([Evaluation](#evaluation)).
 
 ### Where the threshold comes from
 
@@ -423,6 +424,25 @@ or nowhere.
 > **Not precision@k.** With one relevant paper per question, `precision@5` cannot exceed 0.2
 > however perfect the ranking — it measures the value of `k`, not the system. `recall@k` here
 > is hit-rate@k.
+
+### End to end, through `/ask`
+
+Every must-refuse question runs; positives are a fixed-seed sample of 40, since report 1 already
+measures their retrieval exactly and for nothing.
+
+| Positives (40 sampled)         |       | Must-refuse (all 24)              |           |
+| ------------------------------ | ----- | --------------------------------- | --------- |
+| answered, correct paper cited  | 37/40 | refused at gate 1 — 0 LLM calls   | 22/24     |
+| answered, correct paper missed | 3/40  | refused at gate 2 — 1 LLM call    | 2/24      |
+| **wrongly refused**            | **0/40** | **answered anyway**            | **0/24**  |
+
+Not one out-of-corpus question got an answer. The sweep predicted exactly which two would clear
+gate 1 — Raft and consistent hashing — and the grounded prompt refused both.
+
+It also validates the cheap report against the expensive one: report 2 predicts 92/97 = 94.8%
+of positives answerable with the right paper cited, and the live run returns 37/40 = 92.5%.
+Three questions apart, within sampling noise — so the offline sweep can stand in for a
+20-minute LLM run when iterating.
 
 ### What this replaced
 

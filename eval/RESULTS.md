@@ -15,6 +15,9 @@ Method, composition and limitations: [README → Evaluation](../README.md#evalua
 | [002](results/002-topk-10.json)           | `k=10` — measured, **not adopted**  | 94/97             | 94/97                  | 3/24         | 0.75            |
 | [003](results/003-threshold-0.75-e2e.json) | **`t=0.75` adopted** + end-to-end   | 92/97             | 92/97                  | **2/24**     | 0.75            |
 
+Run 003 is the shipped configuration. Runs 001 and 002 record `t=0.71`, which is what was
+committed when they were taken — they are the *before*, not a mistake.
+
 ```bash
 uv run python scripts/evaluate.py --save 001-baseline                      # run 001
 RETRIEVAL_TOP_K=10 uv run python scripts/evaluate.py --save 002-topk-10    # run 002
@@ -75,6 +78,42 @@ the threshold alone suggested `k=10` reached 0.979, but scoring through `fit_con
 Kept at 5. The point is that it is now a priced decision rather than a convention, and the
 recommended threshold is unchanged at both values, so the gate choice is robust to it.
 
+## End-to-end: does `/ask` actually behave? (run 003)
+
+Every negative runs — they are the point, and they are nearly free, because gate 1 refuses most
+of them before the model is called at all. Positives are a fixed-seed sample of 40, since their
+retrieval is already measured exactly, and for nothing, in report 1.
+
+```
+   positives                                    (40 sampled of 97)
+     answered, gold paper cited       37/40  ███████████████████████████████▌
+     answered, gold paper missing      3/40  ██▌
+     wrongly refused                   0/40
+
+   must-refuse                                  (all 24)
+     refused at gate 1 (threshold)    22/24  ████████████████████████████████▌   0 LLM calls
+     refused at gate 2 (prompt)        2/24  ███                                 1 LLM call
+     ANSWERED ANYWAY                   0/24
+```
+
+**Three things this establishes that nothing else could.**
+
+**1. The two-gate design holds end to end.** Not one of the 24 out-of-corpus questions got an
+answer. The sweep predicted exactly which two would clear gate 1 — Raft and consistent hashing
+— and the grounded prompt refused both. Gate 1 handled the other 22 deterministically, at zero
+token cost.
+
+**2. `t=0.75` does not over-refuse.** `wrongly refused: 0/40`. The fear when raising a threshold
+is that real questions start bouncing; on this sample none did.
+
+**3. The offline ceiling is honest.** Report 2 predicts 92/97 = 94.8% of positives can be
+answered with the gold paper cited. End to end on 40 sampled positives: 37/40 = 92.5%. The gap
+is three questions, within sampling noise of the prediction — which means the cheap offline
+sweep can be trusted to stand in for the expensive run.
+
+`degraded_abandoned: 0` — no row was dropped to a rate limit, so every count above is behaviour
+rather than infrastructure. That distinction cost a bug fix: see below.
+
 ## Method changes — two rules that were wrong
 
 Both were caught by running the eval, which is the argument for having one.
@@ -90,8 +129,22 @@ which has the same 2/24 false passes as 0.75 and loses two more correct answers.
 the negatives cannot separate those thresholds, so only the positives are left to decide, and
 the lower value keeps more of them. Ties now break **downward**.
 
-Both are pinned by tests in [`tests/test_eval_set.py`](../tests/test_eval_set.py); reverting
-either turns exactly one test red.
+**3. A rate limit was being scored as a refusal failure.** `answer_question` degrades
+gracefully when the LLM is unreachable — correct for a caller, wrong for an eval. A 429 came
+back as a non-refusal with sources attached, which the report read as *"the model answered a
+question it should have refused"*: contamination of the single number the report exists for.
+Now retried three times with backoff, and if still failing, reported on its own line and
+excluded from every count.
+
+The first two are pinned by tests in [`tests/test_eval_set.py`](../tests/test_eval_set.py);
+reverting either turns exactly one test red.
+
+> [!NOTE]
+> **Budget, because it shapes what can be measured.** Groq's free tier meters 8,000 tokens a
+> minute *and* 200,000 a day. Only the per-minute figure appears in a response header — the
+> daily cap surfaces solely in the body of a 429, so a run paced correctly against the header
+> still dies halfway. Building the golden set costs ~100,000; run 003 costs ~85,000 at a
+> measured 2,095 tokens per `/ask` call. The two fit in one day exactly once.
 
 ## What the previous method could not do
 
