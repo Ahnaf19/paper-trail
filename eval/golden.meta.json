@@ -1,0 +1,13 @@
+{
+  "built_at": "2026-09-16T07:28:56+00:00",
+  "seed": 20260916,
+  "generator_model": "openai/gpt-oss-20b",
+  "corpus": {
+    "papers": 2370,
+    "embeddings": 2370,
+    "newest_updated": "2026-09-15T17:59:53+00:00"
+  },
+  "positives": 97,
+  "negatives": 24,
+  "dropped": 3
+}

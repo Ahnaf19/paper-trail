@@ -1,0 +1,206 @@
+{
+  "coverage": {
+    "positives": 97,
+    "negatives": 24,
+    "labelled_present": 97,
+    "labelled_wanted": 97,
+    "corpus_papers": 2370,
+    "built_against": {
+      "papers": 2370,
+      "embeddings": 2370,
+      "newest_updated": "2026-09-15T17:59:53+00:00"
+    }
+  },
+  "retrieval": {
+    "n": 97,
+    "recall": {
+      "@1": 0.8969072164948454,
+      "@3": 0.9278350515463918,
+      "@5": 0.9484536082474226,
+      "@10": 0.979381443298969,
+      "@20": 0.979381443298969
+    },
+    "mrr": 0.9178694158075601,
+    "per_band": {
+      "big": {
+        "n": 38,
+        "recall@1": 0.9473684210526315,
+        "recall@5": 0.9473684210526315,
+        "recall@10": 1.0,
+        "mrr": 0.9550438596491228
+      },
+      "mid": {
+        "n": 34,
+        "recall@1": 0.8235294117647058,
+        "recall@5": 0.9705882352941176,
+        "recall@10": 1.0,
+        "mrr": 0.8747549019607843
+      },
+      "thin": {
+        "n": 25,
+        "recall@1": 0.92,
+        "recall@5": 0.92,
+        "recall@10": 0.92,
+        "mrr": 0.92
+      }
+    }
+  },
+  "sweep": {
+    "rule": "fewest false passes among t with correct >= 0.95 * retrieval ceiling; ties break low",
+    "retrieval_ceiling": 0.9484536082474226,
+    "recommended": 0.75,
+    "current": 0.71,
+    "table": {
+      "0.60": {
+        "answered": 1.0,
+        "correct": 0.9484536082474226,
+        "false_pass": 15,
+        "adjacent": 14,
+        "off_topic": 1
+      },
+      "0.62": {
+        "answered": 1.0,
+        "correct": 0.9484536082474226,
+        "false_pass": 14,
+        "adjacent": 13,
+        "off_topic": 1
+      },
+      "0.64": {
+        "answered": 1.0,
+        "correct": 0.9484536082474226,
+        "false_pass": 14,
+        "adjacent": 13,
+        "off_topic": 1
+      },
+      "0.66": {
+        "answered": 1.0,
+        "correct": 0.9484536082474226,
+        "false_pass": 11,
+        "adjacent": 11,
+        "off_topic": 0
+      },
+      "0.68": {
+        "answered": 1.0,
+        "correct": 0.9484536082474226,
+        "false_pass": 9,
+        "adjacent": 9,
+        "off_topic": 0
+      },
+      "0.70": {
+        "answered": 1.0,
+        "correct": 0.9484536082474226,
+        "false_pass": 4,
+        "adjacent": 4,
+        "off_topic": 0
+      },
+      "0.71": {
+        "answered": 1.0,
+        "correct": 0.9484536082474226,
+        "false_pass": 3,
+        "adjacent": 3,
+        "off_topic": 0
+      },
+      "0.72": {
+        "answered": 1.0,
+        "correct": 0.9484536082474226,
+        "false_pass": 3,
+        "adjacent": 3,
+        "off_topic": 0
+      },
+      "0.74": {
+        "answered": 1.0,
+        "correct": 0.9484536082474226,
+        "false_pass": 3,
+        "adjacent": 3,
+        "off_topic": 0
+      },
+      "0.75": {
+        "answered": 1.0,
+        "correct": 0.9484536082474226,
+        "false_pass": 2,
+        "adjacent": 2,
+        "off_topic": 0
+      },
+      "0.76": {
+        "answered": 1.0,
+        "correct": 0.9484536082474226,
+        "false_pass": 2,
+        "adjacent": 2,
+        "off_topic": 0
+      },
+      "0.78": {
+        "answered": 1.0,
+        "correct": 0.9381443298969072,
+        "false_pass": 2,
+        "adjacent": 2,
+        "off_topic": 0
+      },
+      "0.80": {
+        "answered": 0.9381443298969072,
+        "correct": 0.8969072164948454,
+        "false_pass": 0,
+        "adjacent": 0,
+        "off_topic": 0
+      },
+      "0.82": {
+        "answered": 0.8350515463917526,
+        "correct": 0.8144329896907216,
+        "false_pass": 0,
+        "adjacent": 0,
+        "off_topic": 0
+      },
+      "0.84": {
+        "answered": 0.7525773195876289,
+        "correct": 0.7216494845360825,
+        "false_pass": 0,
+        "adjacent": 0,
+        "off_topic": 0
+      },
+      "0.86": {
+        "answered": 0.5979381443298969,
+        "correct": 0.5876288659793815,
+        "false_pass": 0,
+        "adjacent": 0,
+        "off_topic": 0
+      },
+      "0.88": {
+        "answered": 0.4329896907216495,
+        "correct": 0.4329896907216495,
+        "false_pass": 0,
+        "adjacent": 0,
+        "off_topic": 0
+      },
+      "0.90": {
+        "answered": 0.2268041237113402,
+        "correct": 0.2268041237113402,
+        "false_pass": 0,
+        "adjacent": 0,
+        "off_topic": 0
+      }
+    }
+  },
+  "config": {
+    "relevance_threshold": 0.71,
+    "retrieval_top_k": 5,
+    "embedding_model": "BAAI/bge-small-en-v1.5",
+    "llm_model": "openai/gpt-oss-20b",
+    "max_context_chars": 12000
+  },
+  "golden_set": {
+    "path": "eval/golden.jsonl",
+    "meta": {
+      "built_at": "2026-09-16T07:28:56+00:00",
+      "seed": 20260916,
+      "generator_model": "openai/gpt-oss-20b",
+      "corpus": {
+        "papers": 2370,
+        "embeddings": 2370,
+        "newest_updated": "2026-09-15T17:59:53+00:00"
+      },
+      "positives": 97,
+      "negatives": 24,
+      "dropped": 3
+    }
+  },
+  "ran_at": "2026-09-16T07:31:25+00:00"
+}
