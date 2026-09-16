@@ -71,21 +71,23 @@ BAR_WIDTH = 34
 # scales -- measure both before sizing a run:
 #
 #   8,000 tokens per MINUTE  paces a run. An `/ask` call carries the retrieved context, so it
-#       costs far more than a bare question: ~1,600 prompt tokens plus ~350 of completion,
-#       most of the latter being gpt-oss-20b's reasoning tokens. 8000 / 2000 = 4 calls a
-#       minute, so 20 s leaves margin. Reported in `x-ratelimit-limit-tokens`.
+#       costs far more than a bare question: measured at 2,095 total -- 1,598 prompt and 497
+#       completion, most of the latter gpt-oss-20b's reasoning tokens. 8000 / 2095 = 3.8 calls
+#       a minute, so 20 s leaves margin. Reported in `x-ratelimit-limit-tokens`.
 #
 #   200,000 tokens per DAY   bounds the whole exercise, and is the one that actually bites.
 #       It appears in NO response header -- only in the body of the 429 -- so a run paced
 #       correctly against the per-minute bucket still dies partway through. Building the
-#       golden set costs ~100,000 of it; every `/ask` row here costs ~2,000 more.
+#       golden set costs ~100,000 of it, and this report ~85,000, so the two together fit in
+#       one day's budget exactly once. Size the sample below before running, not after.
 ASK_PAUSE_SECONDS = 20.0
 
 # Every negative runs: they are the point of this report, and they are nearly free. Gate 1
-# refuses most of them before the model is ever called, so only the two that clear it cost
-# tokens. A positive costs a full call each, and their retrieval behaviour is already measured
-# exactly, and for nothing, in report 1 -- so positives are sampled against the daily budget.
-E2E_POSITIVE_SAMPLE = 10
+# refuses most of them before the model is ever called, so only the handful that clear it cost
+# tokens at all. A positive costs a full call each, and their retrieval behaviour is already
+# measured exactly, and for nothing, in report 1 -- so positives are sampled: 40 of 97 is
+# ~84,000 tokens, which leaves the day's budget room for one retry.
+E2E_POSITIVE_SAMPLE = 40
 E2E_SEED = 20260916
 
 # One judge call per negative that clears the gate -- a handful, not a per-row cost. The
