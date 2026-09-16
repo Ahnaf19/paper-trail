@@ -34,9 +34,7 @@ class Settings(BaseSettings):
     arxiv_base_url: str = "https://export.arxiv.org/api/query"
     arxiv_page_size: int = Field(default=200, ge=1, le=2000)  # 2000 is arXiv's documented cap
     arxiv_min_request_interval: float = Field(default=3.0, ge=3.0)  # their floor, not ours to lower
-    # Convention, not measured: with 2/4/8/16/32s backoff that is ~62s before giving up.
     arxiv_max_retries: int = Field(default=5, ge=0)
-    # Generous for a ~490 kB page. Explicit because httpx's own default is 5s.
     arxiv_timeout_seconds: float = Field(default=60.0, gt=0)
     arxiv_user_agent: str = "paper-trail/0.1"
     arxiv_watermark_margin_days: int = Field(default=1, ge=0)  # covers page-boundary drift
@@ -49,7 +47,6 @@ class Settings(BaseSettings):
     embedding_cache_dir: str | None = None
 
     # Retrieval (PRD §6.10). The threshold is calibrated -- see the note below.
-    # 5 is the conventional RAG default, not a finding -- recall@k would settle it.
     retrieval_top_k: int = Field(default=5, ge=1, le=20)
     relevance_threshold: float = Field(default=0.71, ge=0.0, le=1.0)
     max_question_chars: int = Field(default=1000, ge=1)
@@ -60,8 +57,6 @@ class Settings(BaseSettings):
     llm_base_url: str = "https://api.groq.com/openai/v1"
     llm_model: str = "openai/gpt-oss-20b"
     llm_api_key: str | None = None  # absent => /ask degrades to retrieval + sources
-    # Judgement, not measured. Explicit because httpx defaults to 5s, which would
-    # time out a 20B generation well before it finished.
     llm_timeout_seconds: float = Field(default=30.0, gt=0)
 
     @property

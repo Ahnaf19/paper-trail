@@ -422,26 +422,18 @@ Roughly in the order I would pick them up.
    rate-limited by arXiv (429 on every uncached request), so the 1,200-paper corpus was
    captured once through a VPN and replayed locally through the real client. Every stage is
    exercised, but a long live multi-page run has not been.
-2. **Measure retrieval quality.** Nothing checks whether the *right* papers come back. A
-   known-item set gives **recall@k** and **MRR** — not precision@k, meaningless on
-   single-label ground truth — stratified by category, since four hold 68% of the corpus.
-   Would settle `RETRIEVAL_TOP_K = 5` and how often the threshold over-refuses.
-3. **Measure groundedness, then enforce it.** The grounded prompt is an instruction, not an
-   assertion — nothing checks the answer after generation. **Faithfulness** (split the answer
-   into claims, check each against the context) is the metric that closes that gap, and the
-   gate that should follow it.
-4. **Schedule the ingest.** The incremental path is built and cheap — a re-run with nothing
+2. **Schedule the ingest.** The incremental path is built and cheap — a re-run with nothing
    new costs one throttled request per page — but nothing triggers it. A cron container or
    an external scheduler is a small change.
-5. **Gap-fill the time series behind a flag.** Periods with no papers are currently omitted.
+3. **Gap-fill the time series behind a flag.** Periods with no papers are currently omitted.
    That is honest, but a `?fill=true` using `generate_series` would suit some charts better.
-6. **A read-only database role for the API.** Both read paths only `SELECT`, but they connect
+4. **A read-only database role for the API.** Both read paths only `SELECT`, but they connect
    as the owner. Splitting the roles is the real hardening step and costs almost nothing.
-7. **Re-embed in batches as a separate command.** Changing the embedding model currently
+5. **Re-embed in batches as a separate command.** Changing the embedding model currently
    means re-running ingest; a `paper reembed` working purely from stored text would be
    clearer and would not touch arXiv at all.
-8. **Harden against prompt injection beyond the architectural bound.** Today the model has
+6. **Harden against prompt injection beyond the architectural bound.** Today the model has
    no tools, so the worst case is a wrong answer. If it ever gained tools, the delimiting and
    the system prompt alone would not be enough, and this would need real work.
-9. **An ANN index, once measured.** Exact search is 7.8 ms over 1,200 vectors. At ~100k it
+7. **An ANN index, once measured.** Exact search is 7.8 ms over 1,200 vectors. At ~100k it
    would be worth benchmarking HNSW against the recall it costs — but not before.
