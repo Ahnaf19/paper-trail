@@ -101,12 +101,17 @@ survivors: [RAG](rag.md#the-remaining-overlap-is-structural).
 
 ## End to end, through `/ask`
 
-All 24 must-refuse questions, plus a fixed-seed sample of 40 positives.
+All 24 must-refuse questions, plus a fixed-seed sample of 40 of the 97 positives.
+
+The asymmetry is deliberate. **Every negative runs**, because they are the point and they
+are nearly free — 22 of the 24 never reach the model at all. **Positives are sampled**,
+because each one necessarily costs an LLM call, and their retrieval is already measured
+exactly, and for nothing, by the offline report.
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="img/gates-dark.svg">
-    <img alt="End-to-end outcomes. Of 24 must-refuse questions, 22 stop at gate 1 with zero tokens and 2 at gate 2; none are answered. Of 40 positives, 37 cite the correct paper and none are wrongly refused." src="img/gates-light.svg" width="820">
+    <img alt="End-to-end outcomes. Of 24 must-refuse questions, 22 stop at gate 1 with zero tokens and 2 at gate 2; none are answered. Of 40 positives sampled from the 97, 37 cite the correct paper and none are wrongly refused." src="img/gates-light.svg" width="820">
   </picture>
 </p>
 

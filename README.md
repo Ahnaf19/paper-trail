@@ -97,9 +97,9 @@ uv run python scripts/evaluate.py --with-llm  # + end-to-end answer/refuse behav
 
 Measured against [`eval/golden.jsonl`](eval/golden.jsonl) — 121 labelled rows, 97 positives
 generated **paper-first** (sample a paper, then write a question its abstract answers; the
-reverse makes `recall@5 = 1.0` by construction) and 24 must-refuse questions hand-written,
-because a model asked for "questions about things absent from this corpus" produces things
-present in it.
+reverse makes `recall@5 = 1.0` by construction) and 24 must-refuse questions hand-written — 14
+adjacent computer science, 10 off-topic — because a model asked for "questions about things
+absent from this corpus" produces things present in it.
 
 **Retrieval** — 97 positives over 2,370 papers: `recall@1` 0.897 · **`recall@5` 0.948** ·
 `MRR@20` 0.918.
@@ -119,12 +119,15 @@ cannot repair retrieval, only avoid discarding it. So the negatives decide, and 
 lowest value reaching the fewest false passes.** Refusing the last two would need `t ≥ 0.80`
 and cost **five** real answers — which is what gate 2 is for.
 
-**What the gates actually did**, live through `/ask`:
+**What the gates actually did**, live through `/ask`. Every negative runs — they are the
+point, and they are nearly free, since gate 1 refuses most before the model is called at
+all. Positives are a fixed-seed sample of 40, because each one necessarily costs an LLM
+call and their retrieval is already measured exactly, for nothing, in the sweep above:
 
 <p align="center">
   <picture>
     <source media="(prefers-color-scheme: dark)" srcset="docs/img/gates-dark.svg">
-    <img alt="End-to-end outcomes. Of 24 must-refuse questions, 22 stop at gate 1 with zero tokens and 2 at gate 2; none are answered. Of 40 positives, 37 cite the correct paper and none are wrongly refused." src="docs/img/gates-light.svg" width="820">
+    <img alt="End-to-end outcomes. Of 24 must-refuse questions, 22 stop at gate 1 with zero tokens and 2 at gate 2; none are answered. Of 40 positives sampled from the 97, 37 cite the correct paper and none are wrongly refused." src="docs/img/gates-light.svg" width="820">
   </picture>
 </p>
 
