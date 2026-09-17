@@ -200,7 +200,8 @@ Embed the question → retrieve the nearest abstracts → answer from those alon
 > [!IMPORTANT]
 > The relevance check runs before the model is called. Refusing is control flow and an off-topic question costs zero tokens.
 
-A single cosine threshold cannot separate "this corpus answers that" from "it doesn't". Thus introduced two gates, each catching what the other misses:
+A single cosine threshold cannot separate "this corpus answers that" from "it doesn't". So
+there are two gates, each catching what the other misses:
 
 |     | Gate                                                     | Catches                | Cost         |
 | --- | -------------------------------------------------------- | ---------------------- | ------------ |
@@ -216,7 +217,7 @@ A single cosine threshold cannot separate "this corpus answers that" from "it do
             the Raft consensus algorithm.", "sources": [...5 papers...]}
 ```
 
-Gate 1 is deterministic; gate 2 is but probabilistic.
+Gate 1 is deterministic but imprecise; gate 2 is precise but probabilistic.
 
 > [!WARNING]
 > **Model ids move.** `openai/gpt-oss-20b` was a Groq _production_ model on 15 Sep 2026 and
@@ -226,13 +227,14 @@ Gate 1 is deterministic; gate 2 is but probabilistic.
 
 - The RAG pipeline details: **[docs/rag.md](docs/rag.md)**
 - **Embeddings** are computed in-process by [`fastembed`](https://github.com/qdrant/fastembed):
-  `BAAI/bge-small-en-v1.5`, quantised ONNX, 384 dimensions, 63 MB baked into the image — warmed at startup, so the cost is in the logs rather than on the first request. read: **[docs/rag.md](docs/rag.md#embeddings)**
+  `BAAI/bge-small-en-v1.5`, quantised ONNX, 384 dimensions, 63 MB baked into the image — warmed at startup, so the cost is in the logs rather than on the first request.
+  → **[docs/rag.md](docs/rag.md#embeddings)**
 
 ## Configuration
 
 | Variable                              | Default                          | Notes                                                                                       |
 | ------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------- |
-| `POSTGRES_USER` / `_PASSWORD` / `_DB` | `arxiv`                          | Used by the database container                                                              |
+| `POSTGRES_USER` / `_PASSWORD` / `_DB` / `_PORT` | `arxiv`                          | Used by the database container                                                              |
 | `DATABASE_URL`                        | `…@localhost:5432/arxiv`         | For the CLI **from your host**; the API container overrides it to reach `db`                |
 | `LLM_API_KEY`                         | —                                | 🔴 The only value to be set. Free at [console.groq.com/keys](https://console.groq.com/keys) |
 | `LLM_BASE_URL`                        | `https://api.groq.com/openai/v1` | Any OpenAI-compatible endpoint                                                              |
@@ -241,6 +243,8 @@ Gate 1 is deterministic; gate 2 is but probabilistic.
 | `RETRIEVAL_TOP_K`                     | `5`                              | `10` measured and rejected → [rag](docs/rag.md#retrieval)                                   |
 | `ARXIV_PAGE_SIZE`                     | `200`                            | arXiv's documented ceiling is 2000                                                          |
 | `ARXIV_MIN_REQUEST_INTERVAL`          | `3.0`                            | arXiv's Terms of Use floor. Cannot be set lower                                             |
+| `ARXIV_MAX_RETRIES`                   | `5`                              | Bounded, so an outage exits rather than hanging                                             |
+| `API_PORT`                            | `8000`                           | Published host port only — the container always listens on 8000                             |
 | `LOG_LEVEL`                           | `INFO`                           |                                                                                             |
 
 > [!IMPORTANT]
