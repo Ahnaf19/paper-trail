@@ -81,7 +81,7 @@ overall figure is not what real traffic sees.** The shape is what's interesting:
 
 ## The threshold sweep
 
-Each candidate threshold is scored through `fit_context` — the real code path — on both
+Each candidate threshold `t` is scored through `fit_context` — the real code path — on both
 halves of the set at once: the real answers it **throws away**, and the must-refuse questions
 it **lets through**.
 
@@ -96,11 +96,11 @@ Retrieval puts the correct paper in the top-5 for 92 of the 97 — a ceiling no 
 can beat, because **a gate cannot repair retrieval, only avoid discarding what it found.**
 Everything from 0.70 to 0.76 sits at that ceiling, so the negatives decide.
 
-The selection rule, stated before looking at the numbers: **the lowest threshold that
-reaches the fewest false passes while staying at the retrieval ceiling.** That is `0.75`.
+The selection rule, stated before looking at the numbers: **the lowest `t` that reaches
+the fewest false passes while staying at the retrieval ceiling.** That is `t = 0.75`.
 
-`0.80` refuses every negative — and costs five real answers to do it. The residue is handled
-by gate 2 instead, for one LLM call on two questions out of 24. Full analysis of the two
+`t = 0.80` refuses every negative — and costs five real answers to do it. The residue is handled
+by gate 2 instead, for one LLM call each on two questions out of 24. Full analysis of the two
 survivors: [RAG](rag.md#the-remaining-overlap-is-structural).
 
 ## End to end, through `/ask`
@@ -122,7 +122,7 @@ exactly, and for nothing, by the offline report.
 | Positives (40) | | Must-refuse (24) | |
 | --- | --- | --- | --- |
 | answered, correct paper cited | 37/40 | refused at gate 1 — 0 LLM calls | 22/24 |
-| answered, correct paper missed | 3/40 | refused at gate 2 — 1 LLM call | 2/24 |
+| answered, correct paper missed | 3/40 | refused at gate 2 — 1 LLM call each | 2/24 |
 | **wrongly refused** | **0/40** | **answered anyway** | **0/24** |
 
 The sweep **named both gate-1 survivors in advance** — Raft and consistent hashing — and the

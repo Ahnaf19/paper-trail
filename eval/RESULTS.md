@@ -95,7 +95,7 @@ retrieval is already measured exactly, and for nothing, in report 1.
 
    must-refuse                                  (all 24)
      refused at gate 1 (threshold)    22/24  ████████████████████████████████▌   0 LLM calls
-     refused at gate 2 (prompt)        2/24  ███                                 1 LLM call
+     refused at gate 2 (prompt)        2/24  ███                                 1 LLM call each
      ANSWERED ANYWAY                   0/24
 ```
 

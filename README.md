@@ -26,7 +26,7 @@ The two read paths never contact arXiv. The write path never talks to the LLM.
 
 **Reference docs** — [the brief](docs/brief.md) · [architecture](docs/architecture.md) ·
 [data model](docs/data-model.md) · [rag](docs/rag.md) · [evaluation](docs/evaluation.md) ·
-[api](docs/api.md). Each section below links the one that carries its detail.
+[api](docs/api.md)
 
 ## Quick start
 
@@ -85,22 +85,28 @@ and the answer cites them inline.
 
 ## Evaluation
 
-`/ask` refuses what this corpus cannot answer — first on a similarity threshold (**gate 1**,
-before the model is called), then in the grounded prompt (**gate 2**). Tests prove the code
-runs; only a labelled set shows what those refusals cost.
+`/ask` refuses what this corpus cannot answer:
+
+- first on a similarity threshold (**gate 1**,
+  before the model is called)
+- then in the grounded prompt (**gate 2**)
 
 ```bash
 uv run python scripts/evaluate.py             # retrieval + threshold sweep — offline, free
 uv run python scripts/evaluate.py --with-llm  # + end-to-end answer/refuse behaviour
 ```
 
-- **Dataset** — [`eval/golden.jsonl`](eval/golden.jsonl): 121 rows, 97 positives written
-  paper-first, 24 must-refuse hand-written.
-- **Retrieval** — over 2,370 papers: `recall@1` 0.897 · **`recall@5` 0.948** · `MRR@20` 0.918.
-- **Threshold** — `0.75`, the lowest value reaching the fewest false passes while still at the
-  92/97 retrieval ceiling.
+**Evaluation methodology** at [docs/evaluation.md](docs/evaluation.md). Run log:
+[`eval/RESULTS.md`](eval/RESULTS.md).
 
-**Choosing it** — what each candidate throws away, against what it lets through:
+- **Dataset** — [`eval/golden.jsonl`](eval/golden.jsonl):
+  - 121 rows
+  - 97 positives written (paper-first); 24 must-refuse hand-written.
+- **Retrieval** — over 2,370 papers: `recall@1` 0.897 · **`recall@5` 0.948** · `MRR@20` 0.918.
+- **Threshold `t`** — `0.75`
+
+**Choosing `t`** — the lowest value reaching the fewest false passes while still at the
+92/97 retrieval ceiling:
 
 <p align="center">
   <picture>
@@ -109,7 +115,7 @@ uv run python scripts/evaluate.py --with-llm  # + end-to-end answer/refuse behav
   </picture>
 </p>
 
-**What the gates did live** — all 24 must-refuse, plus 40 positives sampled from the 97:
+**Both gates, end to end** — all 24 must-refuse, plus 40 positives sampled from the 97 (limited LLM calls available due to free tier):
 
 <p align="center">
   <picture>
@@ -117,12 +123,6 @@ uv run python scripts/evaluate.py --with-llm  # + end-to-end answer/refuse behav
     <img alt="End-to-end outcomes. Of 24 must-refuse questions, 22 stop at gate 1 with zero tokens and 2 at gate 2; none are answered. Of 40 positives sampled from the 97, 37 cite the correct paper and none are wrongly refused." src="docs/img/gates-light.svg" width="820">
   </picture>
 </p>
-
-The sweep named both gate-1 survivors in advance — Raft and consistent hashing.
-
-→ **[docs/evaluation.md](docs/evaluation.md)** — construction rules, per-band metrics, the
-selection rule, and what each number is allowed to claim. Run log:
-[`eval/RESULTS.md`](eval/RESULTS.md).
 
 ## Ingesting papers
 
@@ -133,16 +133,10 @@ docker compose exec api paper wipe                                # delete every
 ```
 
 > [!NOTE]
-> `-c` is required and repeatable.
+> `-c` (category) is required and repeatable.
 
 The query is built from `cat:` clauses, so with no category there is no `search_query` to
-send — arXiv has no "everything" query. Codes:
-[arXiv's taxonomy](https://arxiv.org/category_taxonomy); loaded ones via
-`GET /stats/top-categories?n=110`, which spans 104 here.
-
-→ **[docs/architecture.md](docs/architecture.md)** — why re-running is idempotent and cheap,
-how the watermark makes it incremental, the gap guard that stops a truncated run faking
-progress, the undocumented 429, and why the CLI is deliberately synchronous
+send — arXiv has no "everything" query. Codes: [arXiv's taxonomy](https://arxiv.org/category_taxonomy); loaded ones via `GET /stats/top-categories?n=110`
 
 ## Data model
 
@@ -176,13 +170,9 @@ progress, the undocumented 429, and why the CLI is deliberately synchronous
   scan, 2.8–12.9 ms on 2,370 papers. HNSW is 8.7× faster on the vectors and saves 1 ms inside
   a request whose LLM call takes 1–3 seconds.
 
-→ **[docs/data-model.md](docs/data-model.md)** — full column-level schema, the reasoning
-behind each decision, and both measurement tables
+More details at **[docs/data-model.md](docs/data-model.md)**
 
 ## APIs
-
-Five endpoints. Every aggregate is computed by Postgres with `GROUP BY` — **the API never
-contacts arXiv**, and answers with the network disconnected.
 
 | Endpoint                      | Returns                                                       |
 | ----------------------------- | ------------------------------------------------------------- |
@@ -198,19 +188,17 @@ $ curl -s 'localhost:8000/stats/top-categories?n=3'
  {"category": "cs.CL", "count": 667}]
 ```
 
-→ **[docs/api.md](docs/api.md)** — params, response shapes, status codes, and a sample for
-every endpoint. Interactive OpenAPI at [`/docs`](http://localhost:8000/docs) while running.
+- Read details at **[docs/api.md](docs/api.md)**
+- Interactive OpenAPI at [`/docs`](http://localhost:8000/docs) while running.
 
 ## Asking questions — `POST /ask`
 
 Embed the question → retrieve the nearest abstracts → answer from those alone.
 
 > [!IMPORTANT]
-> **The relevance check runs before the model is called.** Refusing is control flow, not an
-> instruction the model might ignore — and an off-topic question costs zero tokens.
+> The relevance check runs before the model is called. Refusing is control flow and an off-topic question costs zero tokens.
 
-A single cosine threshold cannot separate "this corpus answers that" from "it doesn't". Two
-gates, each catching what the other misses:
+A single cosine threshold cannot separate "this corpus answers that" from "it doesn't". Thus introduced two gates, each catching what the other misses:
 
 |     | Gate                                                     | Catches                | Cost         |
 | --- | -------------------------------------------------------- | ---------------------- | ------------ |
@@ -226,7 +214,7 @@ gates, each catching what the other misses:
             the Raft consensus algorithm.", "sources": [...5 papers...]}
 ```
 
-Gate 1 is deterministic but imprecise; gate 2 is precise but probabilistic.
+Gate 1 is deterministic; gate 2 is but probabilistic.
 
 > [!WARNING]
 > **Model ids move.** `openai/gpt-oss-20b` was a Groq _production_ model on 15 Sep 2026 and
@@ -234,34 +222,27 @@ Gate 1 is deterministic but imprecise; gate 2 is precise but probabilistic.
 > nothing else changes. **Without a key `/ask` still works**: `503` with the retrieved papers
 > in `sources` and an explicit message.
 
-→ **[docs/rag.md](docs/rag.md)** — the retrieval query, the grounded prompt, the prompt-injection
-posture, and what every failure returns
+- The RAG pipeline details: **[docs/rag.md](docs/rag.md)**
+- **Embeddings** are computed in-process by [`fastembed`](https://github.com/qdrant/fastembed):
+  `BAAI/bge-small-en-v1.5`, quantised ONNX, 384 dimensions, 63 MB baked into the image — warmed at startup, so the cost is in the logs rather than on the first request. read: **[docs/rag.md](docs/rag.md#embeddings)**
 
 ## Configuration
 
-All configuration is environment variables; `.env.example` lists them.
-
-| Variable                              | Default                          | Notes                                                                                                |
-| ------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------- |
-| `POSTGRES_USER` / `_PASSWORD` / `_DB` | `arxiv`                          | Used by the database container                                                                       |
-| `DATABASE_URL`                        | `…@localhost:5432/arxiv`         | For the CLI **from your host**; the API container overrides it to reach `db`                         |
-| `LLM_API_KEY`                         | —                                | 🔴 The only value to be set. Free at [console.groq.com/keys](https://console.groq.com/keys), no card |
-| `LLM_BASE_URL`                        | `https://api.groq.com/openai/v1` | Any OpenAI-compatible endpoint                                                                       |
-| `LLM_MODEL`                           | `openai/gpt-oss-20b`             | Tested 15 Sep 2026 — see the warning above                                                           |
-| `RELEVANCE_THRESHOLD`                 | `0.75`                           | Measured, not chosen → [evaluation](docs/evaluation.md#the-threshold-sweep)                          |
-| `RETRIEVAL_TOP_K`                     | `5`                              | `10` measured and rejected → [rag](docs/rag.md#retrieval)                                            |
-| `ARXIV_PAGE_SIZE`                     | `200`                            | arXiv's documented ceiling is 2000                                                                   |
-| `ARXIV_MIN_REQUEST_INTERVAL`          | `3.0`                            | arXiv's Terms of Use floor. Cannot be set lower                                                      |
-| `LOG_LEVEL`                           | `INFO`                           |                                                                                                      |
+| Variable                              | Default                          | Notes                                                                                       |
+| ------------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------- |
+| `POSTGRES_USER` / `_PASSWORD` / `_DB` | `arxiv`                          | Used by the database container                                                              |
+| `DATABASE_URL`                        | `…@localhost:5432/arxiv`         | For the CLI **from your host**; the API container overrides it to reach `db`                |
+| `LLM_API_KEY`                         | —                                | 🔴 The only value to be set. Free at [console.groq.com/keys](https://console.groq.com/keys) |
+| `LLM_BASE_URL`                        | `https://api.groq.com/openai/v1` | Any OpenAI-compatible endpoint                                                              |
+| `LLM_MODEL`                           | `openai/gpt-oss-20b`             | Tested 15 Sep 2026 — see the warning above                                                  |
+| `RELEVANCE_THRESHOLD`                 | `0.75`                           | Measured, not chosen → [evaluation](docs/evaluation.md#the-threshold-sweep)                 |
+| `RETRIEVAL_TOP_K`                     | `5`                              | `10` measured and rejected → [rag](docs/rag.md#retrieval)                                   |
+| `ARXIV_PAGE_SIZE`                     | `200`                            | arXiv's documented ceiling is 2000                                                          |
+| `ARXIV_MIN_REQUEST_INTERVAL`          | `3.0`                            | arXiv's Terms of Use floor. Cannot be set lower                                             |
+| `LOG_LEVEL`                           | `INFO`                           |                                                                                             |
 
 > [!IMPORTANT]
-> **`LLM_API_KEY` is the only value you must supply.** Without it everything works except
-> answer generation.
-
-**Embeddings** are computed in-process by [`fastembed`](https://github.com/qdrant/fastembed):
-`BAAI/bge-small-en-v1.5`, quantised ONNX, 384 dimensions, 63 MB baked into the image —
-**no PyTorch**, and no embedding key. Warmed at startup, so the cost is in the logs rather
-than on the first request. → **[docs/rag.md](docs/rag.md#embeddings)**
+> **`LLM_API_KEY` is the only value to be set.** Without it everything works except answer generation.
 
 ## Tests
 
@@ -271,12 +252,10 @@ docker compose up -d db    # Postgres + pgvector on :5432 — the only prerequis
 uv sync && uv run pytest
 ```
 
-No network, no LLM, no model download — the embedding provider and LLM client sit
-behind interfaces the suite fakes. They run against a throwaway `arxiv_test` database built by
-the real migrations, so the schema under test is the schema that ships.
-
-Aimed at what breaks: XML parsing against a saved capture, idempotent re-ingest, staleness
-detection, the watermark's gap guard, aggregation counts on seeded data, and the no-match path.
+- No network, no LLM, no model download — the embedding provider and LLM client sit behind interfaces the suite fakes.
+- They run against a throwaway `arxiv_test` database built by the real migrations, so the schema under test is the schema that ships.
+- Aimed at what breaks: XML parsing against a saved capture, idempotent re-ingest, staleness
+  detection, the watermark's gap guard, aggregation counts on seeded data, and the no-match path.
 
 ## Project layout
 

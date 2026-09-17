@@ -97,8 +97,8 @@ enough, and the split is measured rather than asserted: across 24 must-refuse qu
 
 ## Where the threshold comes from
 
-`0.75` is a property of the embedding model **and** this corpus, so it is measured against a
-labelled set rather than chosen. Method: [evaluation](evaluation.md).
+The threshold `t` is a property of the embedding model **and** this corpus, so it is measured
+against a labelled set rather than chosen. Method: [evaluation](evaluation.md).
 
 | t | correct answers | false passes | of which adjacent-CS |
 | --- | --- | --- | --- |
@@ -110,8 +110,8 @@ labelled set rather than chosen. Method: [evaluation](evaluation.md).
 
 Retrieval puts the correct paper in the top-5 for **92 of 97** questions — a ceiling no
 threshold can beat, since a gate cannot repair retrieval, only avoid discarding it.
-Everything from 0.70 to 0.76 sits at that ceiling, so the negatives decide. **`0.75` is the
-lowest value reaching the fewest false passes.**
+Everything from 0.70 to 0.76 sits at that ceiling, so the negatives decide. **`t = 0.75` is
+the lowest value reaching the fewest false passes.**
 
 ### The remaining overlap is structural
 
