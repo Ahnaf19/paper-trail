@@ -93,7 +93,7 @@ Measured on this corpus:
 Gate 1 is deterministic but imprecise; gate 2 is precise but probabilistic. Neither alone is
 enough, and the split is measured rather than asserted: across 24 must-refuse questions,
 **22 stop at gate 1, 2 at gate 2, none are answered**
-([evaluation](evaluation.md#end-to-end-through-ask)).
+([evaluation](evaluation.md#report-3--end-to-end-through-ask)).
 
 ## Where the threshold comes from
 

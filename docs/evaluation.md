@@ -14,10 +14,17 @@ uv run python scripts/evaluate.py             # offline
 uv run python scripts/evaluate.py --with-llm  # + end to end
 ```
 
-| Report | Measures | Cost |
-| --- | --- | --- |
-| **offline** | retrieval quality (`recall@k`, MRR) and the threshold sweep | **free** — no API key; cheap enough to run on every retrieval change |
-| **`--with-llm`** | what real `/ask` calls answer and refuse | one LLM call per question that clears gate 1 |
+Four reports off one dataset, each isolating a different stage:
+
+| Report | The question it answers | Rows | Cost |
+| --- | --- | --- | --- |
+| **0 — coverage** | Which labelled papers exist in *this* corpus? | 121 | free |
+| **1 — retrieval** | Do the right papers come back at all? | 97 | free |
+| **2 — threshold sweep** | Where should the gate sit, and what does each position cost? | 97 + 24 | free |
+| **3 — end to end** | Does `/ask` actually answer and refuse correctly? | 40 + 24 | ~85k tokens |
+
+Reports 0–2 are deterministic arithmetic over a single pass of the corpus — seconds, no API
+key. Only report 3 calls the model, which is why it needs `--with-llm`.
 
 ## The dataset
 
@@ -47,7 +54,7 @@ uv run python scripts/evaluate.py --with-llm  # + end to end
 - **Leakage guard.** The generator rejects any question lifting five consecutive words from the
   paper's title. Narrows the vocabulary overlap without closing it.
 
-## Retrieval (97 positives · 2,370 papers · 16 Sep 2026)
+## Report 1 — retrieval (97 positives · 2,370 papers · 16 Sep 2026)
 
 | Metric | Overall | | Band | n | recall@1 | recall@5 | MRR |
 | --- | --- | --- | --- | --- | --- | --- | --- |
@@ -75,7 +82,7 @@ overall figure is not what real traffic sees.** The shape is what matters:
 > **Not precision@k.** With one relevant paper per question, `precision@5` cannot exceed 0.2
 > however perfect the ranking. `recall@k` here is hit-rate@k.
 
-## The threshold sweep
+## Report 2 — the threshold sweep
 
 Each candidate threshold `t` is scored through `fit_context` — the real code path — on both
 halves at once: the real answers it **throws away**, against the must-refuse questions it
@@ -98,7 +105,7 @@ halves at once: the real answers it **throws away**, against the must-refuse que
 
 → **[rag.md](rag.md#the-remaining-overlap-is-structural)** — the two that survive gate 1.
 
-## End to end, through `/ask`
+## Report 3 — end to end, through `/ask`
 
 All 24 must-refuse questions, plus a fixed-seed sample of 40 of the 97 positives. The
 asymmetry is deliberate:

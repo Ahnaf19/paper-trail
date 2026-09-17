@@ -237,7 +237,7 @@ Gate 1 is deterministic; gate 2 is but probabilistic.
 | `LLM_API_KEY`                         | —                                | 🔴 The only value to be set. Free at [console.groq.com/keys](https://console.groq.com/keys) |
 | `LLM_BASE_URL`                        | `https://api.groq.com/openai/v1` | Any OpenAI-compatible endpoint                                                              |
 | `LLM_MODEL`                           | `openai/gpt-oss-20b`             | Tested 15 Sep 2026 — see the warning above                                                  |
-| `RELEVANCE_THRESHOLD`                 | `0.75`                           | Measured, not chosen → [evaluation](docs/evaluation.md#the-threshold-sweep)                 |
+| `RELEVANCE_THRESHOLD`                 | `0.75`                           | Measured, not chosen → [evaluation](docs/evaluation.md#report-2--the-threshold-sweep)                 |
 | `RETRIEVAL_TOP_K`                     | `5`                              | `10` measured and rejected → [rag](docs/rag.md#retrieval)                                   |
 | `ARXIV_PAGE_SIZE`                     | `200`                            | arXiv's documented ceiling is 2000                                                          |
 | `ARXIV_MIN_REQUEST_INTERVAL`          | `3.0`                            | arXiv's Terms of Use floor. Cannot be set lower                                             |
