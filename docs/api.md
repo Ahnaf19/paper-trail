@@ -175,7 +175,7 @@ $ curl -s 'localhost:8000/stats/papers-over-time?category=cs.Al'   # capital i, 
 ## `POST /ask`
 
 Embeds the question, retrieves the nearest abstracts by cosine similarity, and answers from
-those alone. Design and threshold calibration are in the [README](../README.md#where-the-threshold-comes-from).
+those alone. Design and threshold calibration are in [docs/rag.md](rag.md#where-the-threshold-comes-from).
 
 **Request body**
 
