@@ -85,27 +85,22 @@ and the answer cites them inline.
 
 ## Evaluation
 
-`/ask` refuses questions this corpus cannot answer — first on a similarity threshold
-(**gate 1**, before the model is called), then in the grounded prompt itself (**gate 2**).
-Tests prove that code runs. They say nothing about whether the right papers come back, or
-what those refusals cost in real answers thrown away.
+`/ask` refuses what this corpus cannot answer — first on a similarity threshold (**gate 1**,
+before the model is called), then in the grounded prompt (**gate 2**). Tests prove the code
+runs; only a labelled set shows what those refusals cost.
 
 ```bash
 uv run python scripts/evaluate.py             # retrieval + threshold sweep — offline, free
 uv run python scripts/evaluate.py --with-llm  # + end-to-end answer/refuse behaviour
 ```
 
-Measured against [`eval/golden.jsonl`](eval/golden.jsonl) — 121 labelled rows, 97 positives
-generated **paper-first** (sample a paper, then write a question its abstract answers; the
-reverse makes `recall@5 = 1.0` by construction) and 24 must-refuse questions hand-written — 14
-adjacent computer science, 10 off-topic — because a model asked for "questions about things
-absent from this corpus" produces things present in it.
+- **Dataset** — [`eval/golden.jsonl`](eval/golden.jsonl): 121 rows, 97 positives written
+  paper-first, 24 must-refuse hand-written.
+- **Retrieval** — over 2,370 papers: `recall@1` 0.897 · **`recall@5` 0.948** · `MRR@20` 0.918.
+- **Threshold** — `0.75`, the lowest value reaching the fewest false passes while still at the
+  92/97 retrieval ceiling.
 
-**Retrieval** — 97 positives over 2,370 papers: `recall@1` 0.897 · **`recall@5` 0.948** ·
-`MRR@20` 0.918.
-
-**Choosing the threshold.** Each candidate scored on both halves at once — real answers it
-throws away, must-refuse questions it lets through:
+**Choosing it** — what each candidate throws away, against what it lets through:
 
 <p align="center">
   <picture>
@@ -114,15 +109,7 @@ throws away, must-refuse questions it lets through:
   </picture>
 </p>
 
-Retrieval finds the correct paper for 92 of 97 — a ceiling no threshold can beat, since a gate
-cannot repair retrieval, only avoid discarding it. So the negatives decide, and **`0.75` is the
-lowest value reaching the fewest false passes.** Refusing the last two would need `t ≥ 0.80`
-and cost **five** real answers — which is what gate 2 is for.
-
-**What the gates actually did**, live through `/ask`. Every negative runs — they are the
-point, and they are nearly free, since gate 1 refuses most before the model is called at
-all. Positives are a fixed-seed sample of 40, because each one necessarily costs an LLM
-call and their retrieval is already measured exactly, for nothing, in the sweep above:
+**What the gates did live** — all 24 must-refuse, plus 40 positives sampled from the 97:
 
 <p align="center">
   <picture>
@@ -131,8 +118,7 @@ call and their retrieval is already measured exactly, for nothing, in the sweep 
   </picture>
 </p>
 
-The sweep named both gate-1 survivors in advance — Raft and consistent hashing — and the
-grounded prompt refused both.
+The sweep named both gate-1 survivors in advance — Raft and consistent hashing.
 
 → **[docs/evaluation.md](docs/evaluation.md)** — construction rules, per-band metrics, the
 selection rule, and what each number is allowed to claim. Run log:

@@ -92,6 +92,10 @@ it **lets through**.
   </picture>
 </p>
 
+Retrieval puts the correct paper in the top-5 for 92 of the 97 — a ceiling no threshold
+can beat, because **a gate cannot repair retrieval, only avoid discarding what it found.**
+Everything from 0.70 to 0.76 sits at that ceiling, so the negatives decide.
+
 The selection rule, stated before looking at the numbers: **the lowest threshold that
 reaches the fewest false passes while staying at the retrieval ceiling.** That is `0.75`.
 
