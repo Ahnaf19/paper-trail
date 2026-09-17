@@ -6,17 +6,18 @@
 > what each number is allowed to claim. The dated run log, the before/after of every method
 > change, and the raw per-run output live in [`eval/RESULTS.md`](../eval/RESULTS.md).
 
-Tests prove the code runs. They say nothing about whether the *right papers come back*, or
-what the relevance gate costs in answers it wrongly throws away. Those are different
-questions and they need a labelled set, not assertions.
+Tests prove the code runs. They say nothing about whether the **right papers come back**, or
+what the relevance gate costs in real answers it throws away. That needs a labelled set.
 
 ```bash
-uv run python scripts/evaluate.py             # retrieval + threshold sweep — offline, free
-uv run python scripts/evaluate.py --with-llm  # + end-to-end answer/refuse behaviour
+uv run python scripts/evaluate.py             # offline
+uv run python scripts/evaluate.py --with-llm  # + end to end
 ```
 
-The offline report needs no API key and costs nothing, which is the point: it is cheap
-enough to run on every change to retrieval.
+| Report | Measures | Cost |
+| --- | --- | --- |
+| **offline** | retrieval quality (`recall@k`, MRR) and the threshold sweep | **free** — no API key; cheap enough to run on every retrieval change |
+| **`--with-llm`** | what real `/ask` calls answer and refuse | one LLM call per question that clears gate 1 |
 
 ## The dataset
 
@@ -38,17 +39,13 @@ enough to run on every change to retrieval.
 > abstract answers. The reverse — ask a question, then label whatever retrieval returned —
 > makes `recall@5 = 1.0` by construction and measures nothing at all.
 
-**Stratified by each paper's *rarest* category.** Five categories hold most of the corpus,
-so a uniform sample would test retrieval almost exclusively where it is densest, and report
-a number that says nothing about the long tail.
-
-**Negatives are hand-written, not generated.** Asking a model for "questions about things
-absent from this corpus" reliably produces things present in it — it has no view of what the
-corpus contains. The 14 *adjacent* negatives are the ones that matter: real computer science
-that this corpus does not cover, which is where a naive threshold fails.
-
-**Leakage guard.** The generator rejects any question lifting five consecutive words from
-the paper's title, which narrows the vocabulary overlap without closing it.
+- **Stratified by each paper's *rarest* category.** Five categories hold most of the corpus, so
+  a uniform sample would test retrieval only where it is densest and say nothing about the tail.
+- **Negatives are hand-written.** Ask a model for "questions about things absent from this
+  corpus" and it produces things present in it. The 14 *adjacent* negatives are the ones that
+  matter — real computer science this corpus does not cover, where a naive threshold fails.
+- **Leakage guard.** The generator rejects any question lifting five consecutive words from the
+  paper's title. Narrows the vocabulary overlap without closing it.
 
 ## Retrieval (97 positives · 2,370 papers · 16 Sep 2026)
 
@@ -67,13 +64,12 @@ the paper's title, which narrows the vocabulary overlap without closing it.
 </p>
 
 Bands are reported separately because thin categories are deliberately over-sampled — **the
-overall figure is not what real traffic sees.** The shape is what's interesting:
+overall figure is not what real traffic sees.** The shape is what matters:
 
-- `mid` has the **worst recall@1 and the best recall@5**. The right paper is found; it just
-  isn't first. That is a ranking problem, and it is exactly what a cross-encoder re-rank
-  fixes.
-- `thin` is flat across every `k`. Rank 1 or nowhere — with under 10 papers in a category
-  there is no near-miss to climb.
+- **`mid` — worst recall@1, best recall@5.** The right paper is found, just not first. A
+  ranking problem, and exactly what a cross-encoder re-rank fixes.
+- **`thin` — flat across every `k`.** Rank 1 or nowhere; under 10 papers, there is no
+  near-miss to climb.
 
 > [!NOTE]
 > **Not precision@k.** With one relevant paper per question, `precision@5` cannot exceed 0.2
@@ -82,8 +78,8 @@ overall figure is not what real traffic sees.** The shape is what's interesting:
 ## The threshold sweep
 
 Each candidate threshold `t` is scored through `fit_context` — the real code path — on both
-halves of the set at once: the real answers it **throws away**, and the must-refuse questions
-it **lets through**.
+halves at once: the real answers it **throws away**, against the must-refuse questions it
+**lets through**.
 
 <p align="center">
   <picture>
@@ -92,25 +88,25 @@ it **lets through**.
   </picture>
 </p>
 
-Retrieval puts the correct paper in the top-5 for 92 of the 97 — a ceiling no threshold
-can beat, because **a gate cannot repair retrieval, only avoid discarding what it found.**
-Everything from 0.70 to 0.76 sits at that ceiling, so the negatives decide.
+- **The ceiling is 92 of 97.** Retrieval finds the correct paper for 92 questions, so no `t`
+  can do better — **a gate cannot repair retrieval, only avoid discarding what it found.**
+  Everything from 0.70 to 0.76 sits at that ceiling, so the negatives decide.
+- **The rule, fixed before looking at the numbers:** the lowest `t` reaching the fewest false
+  passes while staying at the ceiling. That is **`t = 0.75`**.
+- **`t = 0.80` refuses every negative** — and costs five real answers to do it. The residue
+  goes to gate 2 instead: one LLM call each, on two questions out of 24.
 
-The selection rule, stated before looking at the numbers: **the lowest `t` that reaches
-the fewest false passes while staying at the retrieval ceiling.** That is `t = 0.75`.
-
-`t = 0.80` refuses every negative — and costs five real answers to do it. The residue is handled
-by gate 2 instead, for one LLM call each on two questions out of 24. Full analysis of the two
-survivors: [RAG](rag.md#the-remaining-overlap-is-structural).
+→ **[rag.md](rag.md#the-remaining-overlap-is-structural)** — the two that survive gate 1.
 
 ## End to end, through `/ask`
 
-All 24 must-refuse questions, plus a fixed-seed sample of 40 of the 97 positives.
+All 24 must-refuse questions, plus a fixed-seed sample of 40 of the 97 positives. The
+asymmetry is deliberate:
 
-The asymmetry is deliberate. **Every negative runs**, because they are the point and they
-are nearly free — 22 of the 24 never reach the model at all. **Positives are sampled**,
-because each one necessarily costs an LLM call, and their retrieval is already measured
-exactly, and for nothing, by the offline report.
+- **Every negative runs** — they are the point, and they are nearly free: 22 of the 24 never
+  reach the model at all.
+- **Positives are sampled** — each one necessarily costs an LLM call, and their retrieval is
+  already measured exactly, and for nothing, by the offline report.
 
 <p align="center">
   <picture>
@@ -125,13 +121,12 @@ exactly, and for nothing, by the offline report.
 | answered, correct paper missed | 3/40 | refused at gate 2 — 1 LLM call each | 2/24 |
 | **wrongly refused** | **0/40** | **answered anyway** | **0/24** |
 
-The sweep **named both gate-1 survivors in advance** — Raft and consistent hashing — and the
-grounded prompt refused both. The offline report predicted the live behaviour rather than
-being reconciled with it after the fact.
-
-The offline sweep predicts 92/97 = 94.8% answerable with the right paper cited; live gives
-37/40 = 92.5%. Within sampling noise — which is what licenses using the free offline report
-while iterating and paying for the 20-minute one only at the end.
+- **The sweep named both gate-1 survivors in advance** — Raft and consistent hashing — and the
+  grounded prompt refused both. The offline report *predicted* live behaviour rather than being
+  reconciled with it afterwards.
+- **The offline ceiling is honest.** It predicts 92/97 = 94.8%; live gives 37/40 = 92.5%.
+  Within sampling noise — which is what licenses iterating on the free report and paying for
+  the 20-minute one only at the end.
 
 ## What this replaced
 
