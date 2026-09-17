@@ -1,5 +1,8 @@
 # Evaluation results
 
+> **Method — how the golden set is built and what each metric may claim — is in
+> [`docs/evaluation.md`](../docs/evaluation.md). This file is the run log.**
+
 Every row below is a saved run in [`results/`](results/), reproducible with the command shown.
 The dataset is [`golden.jsonl`](golden.jsonl) — 97 generated positives and 24 hand-written
 must-refuse questions — built against the 2,370-paper corpus of 16 Sep 2026
