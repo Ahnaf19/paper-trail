@@ -1,5 +1,7 @@
 # API reference
 
+[← README](../README.md) · siblings: [architecture](architecture.md) · [data model](data-model.md) · [RAG](rag.md) · [evaluation](evaluation.md)
+
 Base URL `http://localhost:8000` · JSON in, JSON out · no authentication.
 Interactive docs (OpenAPI) at **`/docs`** while the service is running.
 
