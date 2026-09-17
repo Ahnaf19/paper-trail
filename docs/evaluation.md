@@ -16,15 +16,12 @@ uv run python scripts/evaluate.py --with-llm  # + end to end
 
 Four reports off one dataset, each isolating a different stage:
 
-| Report | The question it answers | Rows | Cost |
-| --- | --- | --- | --- |
-| **0 — coverage** | Which labelled papers exist in *this* corpus? | 121 | free |
-| **1 — retrieval** | Do the right papers come back at all? | 97 | free |
-| **2 — threshold sweep** | Where should the gate sit, and what does each position cost? | 97 + 24 | free |
-| **3 — end to end** | Does `/ask` actually answer and refuse correctly? | 40 + 24 | ~85k tokens |
-
-Reports 0–2 are deterministic arithmetic over a single pass of the corpus — seconds, no API
-key. Only report 3 calls the model, which is why it needs `--with-llm`.
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="img/evalflow-dark.svg">
+    <img alt="Evaluation flow. eval/golden.jsonl (121 rows: 97 positives + 24 must-refuse) feeds Report 0, coverage, which decides which labelled papers exist in this corpus. It then splits into two lanes. The offline lane, free and seconds long, runs one Probe per question — embed, retrieve at k=20, record the rank of the gold paper — and both Report 1 (retrieval: recall@1/5/10 and MRR@20 over 97 rows) and Report 2 (the threshold sweep over 97 + 24 rows, yielding t = 0.75) are computed from those same 121 probes with no further queries. The --with-llm lane, costing about 85k tokens, runs Report 3 end to end on 40 sampled positives plus all 24 must-refuse by calling the real answer_question(): 0 of 24 answered anyway, 0 of 40 wrongly refused, 37 of 40 citing the correct paper." src="img/evalflow-light.svg" width="840">
+  </picture>
+</p>
 
 ## The dataset
 
