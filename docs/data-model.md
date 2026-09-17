@@ -144,10 +144,12 @@ the whole corpus has none — Postgres reads every row regardless of what indexe
 
 8.7× faster — and not worth it, because of where that millisecond sits:
 
-```
-  /ask   ├ embed ┤├ retrieve 2.8 ms ┤├──────────── LLM 1–3 s ────────────┤
-                  └ HNSW saves 1.0 ms of this → under 0.1% of the request
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="img/latency-dark.svg">
+    <img alt="Latency budget for one /ask request: embed and retrieve together take 11 ms inside a request whose LLM call takes 1 to 3 seconds. HNSW would save 1.0 ms of that." src="img/latency-light.svg" width="800">
+  </picture>
+</p>
 
 So the trade is: **under 0.1% of end-to-end latency, bought with an approximate result and
 an index the size of the table.** Worth revisiting around 100k vectors, where the exact scan

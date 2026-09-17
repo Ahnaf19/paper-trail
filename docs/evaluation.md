@@ -59,12 +59,12 @@ the paper's title, which narrows the vocabulary overlap without closing it.
 | recall@10 | 0.979 | | `thin` (< 10) | 25 | 0.920 | 0.920 | 0.920 |
 | MRR@20 | 0.918 | | | | | | |
 
-```
-              recall@1                 recall@5
-  big  (38)   ███████████████  .947    ███████████████  .947
-  mid  (34)   █████████████    .824    ███████████████▌ .971   ← found, just not first
-  thin (25)   ██████████████▌  .920    ██████████████▌  .920   ← rank 1 or nowhere
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="img/recall-dark.svg">
+    <img alt="Recall by band. big scores 0.947 at both k. mid rises from 0.824 at k=1 to 0.971 at k=5 — the paper is found, just not first. thin is flat at 0.920 for both." src="img/recall-light.svg" width="760">
+  </picture>
+</p>
 
 Bands are reported separately because thin categories are deliberately over-sampled — **the
 overall figure is not what real traffic sees.** The shape is what's interesting:
@@ -82,18 +82,15 @@ overall figure is not what real traffic sees.** The shape is what's interesting:
 ## The threshold sweep
 
 Each candidate threshold is scored through `fit_context` — the real code path — on both
-halves of the set at once: what it *keeps* (positives still answerable) and what it *lets
-through* (negatives that should have been refused).
+halves of the set at once: the real answers it **throws away**, and the must-refuse questions
+it **lets through**.
 
-```
-              answers kept (of 97)        false passes (of 24)
-  t=0.70   ████████████████████ 92      ████  4
-  t=0.71   ████████████████████ 92      ███   3
-▶ t=0.75   ████████████████████ 92      ██    2   ← chosen
-  t=0.78   ███████████████████▌ 91      ██    2
-  t=0.80   ██████████████████▍  87      ·     0
-           └─ ceiling: retrieval finds the paper for 92/97 ─┘
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="img/threshold-dark.svg">
+    <img alt="Threshold sweep. From 0.70 to 0.75 the only answers lost are the 5 retrieval never found, while must-refuse questions let through fall from 4 to 2. At 0.78 a sixth answer is lost, and 0.80 reaches zero false passes only by losing ten answers." src="img/threshold-light.svg" width="800">
+  </picture>
+</p>
 
 The selection rule, stated before looking at the numbers: **the lowest threshold that
 reaches the fewest false passes while staying at the retrieval ceiling.** That is `0.75`.
@@ -106,10 +103,12 @@ survivors: [RAG](rag.md#the-remaining-overlap-is-structural).
 
 All 24 must-refuse questions, plus a fixed-seed sample of 40 positives.
 
-```
-  must-refuse (24)  ████████████████████▌ 22 gate 1 · zero tokens   ██ 2 gate 2   ✗ 0 answered
-  positives   (40)  ███████████████████████████ 37 correct paper cited            ✗ 0 wrongly refused
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="img/gates-dark.svg">
+    <img alt="End-to-end outcomes. Of 24 must-refuse questions, 22 stop at gate 1 with zero tokens and 2 at gate 2; none are answered. Of 40 positives, 37 cite the correct paper and none are wrongly refused." src="img/gates-light.svg" width="820">
+  </picture>
+</p>
 
 | Positives (40) | | Must-refuse (24) | |
 | --- | --- | --- | --- |
