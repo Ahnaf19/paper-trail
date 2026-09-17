@@ -6,95 +6,74 @@ One write path and two read paths over a single Postgres. They share the databas
 nothing else — **the read paths never contact arXiv, and the write path never talks to the
 LLM.**
 
-```
-  ┌─ write path ──────────────────────────────────────────────────────────────┐
-  │                                                                           │
-  │   arXiv Atom API ──▶ fetch ──▶ parse ──▶ upsert ──▶ embed ──▶ watermark   │
-  │   1 req / 3 s          │         │         │          │          │        │
-  │   backoff on 429       │         │         └──────────┘          │        │
-  │                        │         │        one transaction        │        │
-  │                        │         │          per page             │        │
-  │                    ArxivClient  parse_feed   upsert_papers   _advance_    │
-  │                                              refresh_embeddings watermark │
-  └───────────────────────────────────────────────────────────────────────────┘
-                                      │
-                                      ▼
-                        PostgreSQL + pgvector
-                                      │
-       ┌──────────────────────────────┴──────────────────────────────┐
-       ▼                                                             ▼
-  ┌─ read: aggregates ─────────────┐              ┌─ read: answers ──────────────────┐
-  │  GET /stats/*                  │              │  POST /ask                       │
-  │  GROUP BY, computed in SQL     │              │  embed ▸ top-k ▸ gate ▸ generate │
-  │  no network at all             │              │            │                     │
-  └────────────────────────────────┘              │            ▼                     │
-                                                  │  OpenAI-compatible LLM  [ext]    │
-                                                  └──────────────────────────────────┘
-```
+<p align="center">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="img/architecture-dark.svg">
+    <img alt="System architecture. The write path, paper ingest, is the only thing that talks to arXiv: the Atom API at one request per 3 seconds with backoff on 429, then fetch (ArxivClient), parse (parse_feed), upsert (upsert_papers) and embed (refresh_embeddings). Upsert and embed sit inside one transaction per page, so a paper cannot commit without its vector. The watermark advances separately, after the loop, and only if the walk reached the previous mark. Everything lands in PostgreSQL with pgvector — papers, authors, categories and 384-dim vectors — which then feeds two read paths: GET /stats/*, three GROUP BY queries computed by Postgres with no network at all, and POST /ask, which embeds, retrieves top-k, gates and generates against an OpenAI-compatible LLM." src="img/architecture-light.svg" width="860">
+  </picture>
+</p>
 
 ## The write path — `paper ingest`
 
-`app/services/ingest.py` drives the loop; each stage is its own module and knows nothing
-about its neighbours' concerns. `ArxivClient` knows HTTP and throttling but not Atom;
-`parse_feed` knows Atom but not the database; `upsert_papers` knows the database but has
-never seen a URL.
+`app/services/ingest.py` drives the loop. Each stage is its own module and knows nothing of
+its neighbours' concerns:
+
+- **`ArxivClient`** knows HTTP and throttling, but not Atom.
+- **`parse_feed`** knows Atom, but not the database.
+- **`upsert_papers`** knows the database, but has never seen a URL.
 
 ### One transaction per page
 
-A page is fetched, parsed, upserted **and embedded** inside a single transaction, then
-committed. A crash loses at most the page in flight, never the run — and a paper can never
-be committed without its vector, because both writes are in the same transaction.
+A page is upserted **and embedded** inside one transaction, then committed.
+
+- **A crash loses at most the page in flight**, never the run.
+- **A paper can never commit without its vector** — both writes are in the same transaction,
+  so the inconsistent state is unreachable rather than handled.
 
 ### Rate limiting, and the 429 that isn't documented
 
-arXiv's Terms of Use ask for one request every 3 seconds and _"a single connection at a
-time"_. The client sleeps the remainder of that interval before every request, and logs
-**after** the sleep — so the gap between two log lines is the throttle, provable from the
-output.
-
-The documented rule is necessary but not sufficient. Verified 14 Sep 2026: a first
-_uncached_ query returned **HTTP 429 repeatedly**, while a common cached query returned 200
-instantly from the Fastly edge. Neither arXiv's API docs nor its Terms of Use mention 429 or
-any penalty mechanism. So the client also treats `429` and `5xx` as retryable with bounded
-exponential backoff (`2s, 4s, 8s…`, honouring `Retry-After` when present), and exits
-non-zero after `ARXIV_MAX_RETRIES` rather than hanging.
+- **The documented rule:** one request every 3 seconds, _"a single connection at a time"_.
+  The client sleeps the remainder of the interval before each request and logs **after** the
+  sleep — so the gap between two log lines *is* the throttle, provable from the output.
+- 🔴 **It is necessary but not sufficient.** Verified 14 Sep 2026: a first *uncached* query
+  returned **HTTP 429 repeatedly**, while a common cached query returned 200 instantly from
+  the Fastly edge. Neither arXiv's API docs nor its Terms of Use mention 429 at all.
+- **So 429 and 5xx are retryable** — bounded exponential backoff (`2s, 4s, 8s…`, honouring
+  `Retry-After`), exiting non-zero after `ARXIV_MAX_RETRIES` rather than hanging.
 
 ### Deliberately synchronous
 
-There is no concurrency to win. The bottleneck is a deliberate `time.sleep`, and the Terms
-of Use forbid parallel connections anyway. Async here would buy zero throughput in exchange
-for harder testing and trickier transaction handling. The **API** is async, where the
-multi-second LLM call actually makes it pay; the **CLI** is sync. Neither style leaks into
-the other.
+- **There is no concurrency to win.** The bottleneck is a deliberate `time.sleep`, and the
+  Terms of Use forbid parallel connections anyway.
+- **Async would cost, not pay** — harder testing and trickier transaction handling, for zero
+  throughput.
+- **The API is async** where the multi-second LLM call makes it pay; **the CLI is sync.**
+  Neither style leaks into the other.
 
 ### Idempotent re-runs
 
-Identity is `arxiv_id` with the version suffix stripped, and it is `UNIQUE`. Re-ingest is an
-`INSERT … ON CONFLICT DO UPDATE`, so **duplicate prevention is a database constraint, not a
-read-then-write check that can race**. A paper is only rewritten when arXiv's `updated` is
-newer than the stored one, so a re-run over unchanged data touches nothing and `RETURNING`
-names exactly what moved.
-
-Authors and categories get the same treatment: get-or-create in two statements per page
-regardless of row count, never one statement per author.
+- **Identity is `arxiv_id`**, version suffix stripped, `UNIQUE`. Re-ingest is
+  `INSERT … ON CONFLICT DO UPDATE` — **a database constraint, not a read-then-write that can
+  race.**
+- **Unchanged data is not rewritten.** A paper moves only when arXiv's `updated` is newer, so
+  `RETURNING` names exactly what changed.
+- **Authors and categories get the same treatment** — get-or-create in two statements per
+  page regardless of row count, never one per author.
 
 ### The watermark, and why a truncated run refuses to advance it
 
-The feed is sorted by `lastUpdatedDate` descending, so **one high-water mark catches new
-_and_ revised papers** — a revision bumps `updated` and floats back to the top. The scan
-stops once an entire page predates the mark.
-
-The mark asserts _"everything at or above this is ingested"_. That only holds if the walk
-came down far enough to **meet the previous mark**. A run cut short by `--max` can stop
-above it, leaving a span that was never fetched — and advancing over that span would bury it
-permanently below the next run's stop threshold.
-
-So `_advance_watermark` moves the mark only when this run's oldest paper reaches at or below
-the previous mark. Otherwise it logs, leaves the mark where it is, and the run reports
-**`[gap left open]`**. Re-run with a larger `--max`, or `--full`.
-
-The same guard covers exceptions: the mark is written only after the loop exits cleanly, so
-a crash never records progress that was not made.
+- **One mark catches new *and* revised papers.** The feed is sorted by `lastUpdatedDate`
+  descending, so a revision bumps `updated` and floats back to the top. The scan stops once a
+  whole page predates the mark.
+- **The mark asserts *"everything at or above this is ingested"*** — which only holds if the
+  walk came down far enough to meet the previous mark.
+- 🔴 **A run cut short by `--max` can stop above it**, leaving a span never fetched.
+  Advancing over that span would bury it permanently below the next run's stop threshold.
+- **So `_advance_watermark` moves only if this run's oldest paper reaches the previous mark.**
+  Otherwise the mark stays put and the run reports **`[gap left open]`** — re-run with a
+  larger `--max`, or `--full`.
+- **The same guard covers exceptions.** The mark is written only after the loop exits
+  cleanly, so a crash never records progress that was not made.
 
 > [!NOTE]
 > **`--max` rounds up to a whole page.** It is checked _after_ each page commits, and pages
@@ -102,23 +81,27 @@ a crash never records progress that was not made.
 
 ### The watermark is keyed by the category set
 
-`ingest_state.categories_key` is the sorted set, e.g. `cs.AI|cs.CL|cs.LG`. Ingest `cs.AI`,
-then re-run adding `cs.LG`: a shared watermark would stop early and silently skip every
-older `cs.LG` paper. A key mismatch forces a full scan instead.
+`ingest_state.categories_key` is the sorted set, e.g. `cs.AI|cs.CL|cs.LG`.
+
+- **A shared mark would silently skip papers.** Ingest `cs.AI`, then re-run adding `cs.LG`:
+  the older `cs.LG` papers look "already done" and are never fetched.
+- **A key mismatch forces a full scan** instead.
 
 ### Why `-c` is required
 
 The query is built from `cat:` clauses joined with `+OR+`. With no category there is no
-`search_query` to send — **arXiv has no "everything" query**. Omitting it exits 2 with a
+`search_query` to send — **arXiv has no "everything" query.** Omitting `-c` exits 2 with a
 copyable example rather than guessing a default.
 
 ## The read paths
 
 ### `GET /stats/*`
 
-Every aggregate is a `GROUP BY` executed by Postgres over stored rows. Nothing is recomputed
-from arXiv, and **all three endpoints answer with the network disconnected**. Responses are
-flat lists of labelled points — the shape a charting library consumes directly.
+- **Every aggregate is a `GROUP BY`** executed by Postgres over stored rows — nothing is
+  recomputed from arXiv.
+- **All three endpoints answer with the network disconnected.**
+- **Responses are flat lists of labelled points** — the shape a charting library takes
+  directly.
 
 ### `POST /ask`
 
@@ -150,13 +133,11 @@ models/     SQLAlchemy ORM — the schema's source of truth
 schemas/    Pydantic at every boundary that crosses a wire (HTTP, or arXiv's XML)
 ```
 
-A service returns a result object; the router decides what status code that means.
-`AnswerResult.degraded` is the clearest case — the service records that generation failed
-after retrieval succeeded, and the router turns that into `503` with the sources intact.
-
-Two `Protocol` seams keep the test suite off the network entirely: `Embedder` and
-`LLMClient`. The suite fakes both, which is why the whole suite runs with no network, no
-LLM and no model download.
+- **A service returns a result object; the router decides what status code that means.**
+  `AnswerResult.degraded` is the clearest case — the service records that generation failed
+  *after* retrieval succeeded, and the router turns that into `503` with the sources intact.
+- **Two `Protocol` seams keep the tests off the network** — `Embedder` and `LLMClient`. The
+  suite fakes both, which is why it runs with no network, no LLM and no model download.
 
 ## Failure behaviour
 
@@ -175,9 +156,7 @@ can carry a key in its query string.
 
 ## Startup
 
-The container entrypoint runs `alembic upgrade head` before the API starts, so a fresh
-database becomes a working one with one command and **no manual migration step**.
-
-The embedding model is then warmed in the lifespan, before the app serves traffic — the cost
-is visible in the logs and gated by the healthcheck, rather than landing on whoever sends
-the first request.
+- **`alembic upgrade head` runs in the container entrypoint**, before the API starts — a
+  fresh database becomes a working one with one command and **no manual migration step**.
+- **The embedding model is warmed in the lifespan**, before traffic is served. The cost shows
+  up in the logs and is gated by the healthcheck, rather than landing on the first request.
