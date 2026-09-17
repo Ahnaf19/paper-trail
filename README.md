@@ -24,6 +24,10 @@ abstracts — _**every answer carrying a trail back to the papers it came from.*
 
 The two read paths never contact arXiv. The write path never talks to the LLM.
 
+**Reference docs** — [the brief](docs/brief.md) · [architecture](docs/architecture.md) ·
+[data model](docs/data-model.md) · [rag](docs/rag.md) · [evaluation](docs/evaluation.md) ·
+[api](docs/api.md). Each section below links the one that carries its detail.
+
 ## Quick start
 
 ```bash
@@ -36,7 +40,7 @@ docker compose exec api paper ingest -c cs.AI -c cs.CL -c cs.LG
 curl -s 'localhost:8000/stats/top-categories?n=3'
 
 curl -s -X POST localhost:8000/ask -H 'Content-Type: application/json' \
-  -d '{"question": "How agent memory looked like in early stage of LLMs?"}'
+  -d '{"question": "How do LLM agents structure long-term memory?"}'
 ```
 
 ```jsonc
@@ -46,18 +50,22 @@ curl -s -X POST localhost:8000/ask -H 'Content-Type: application/json' \
 
 // POST /ask
 {
-  "answer": "The abstracts suggest that early LLM agents used simple retrieval-augmented
-             memory. These systems could store and recall basic facts, perform multi-hop
-             retrieval, and track time-based changes, but they did not organize knowledge
-             into structured hierarchies (e.g. ledgers, trees, or to-do lists)... (2602.11243).",
+  "answer": "LLM agents structure long-term memory in several ways.
+             - **Structured organization**: arranging memories into explicit formats such as
+               ledgers, to-do lists, or trees (2602.11243).
+             - **Graph-based cognition**: REALM models memory as a heterogeneous cognitive
+               graph, reconsolidating memories from retrieval feedback (2609.16053).
+             - **Lifecycle awareness**: LifeFuse-Mem separates durable from transient
+               knowledge, so temporary context cannot overwrite long-term state
+               (2609.12436)...",
   "sources": [
     {"arxiv_id": "2602.11243", "title": "Evaluating Memory Structure in LLM Agents",
-     "score": 0.8425},
-    {"arxiv_id": "2605.28108", "title": "Ask Now, Use Later: Benchmarking the Proactivity
-      Gap in Long-Lived LLM Agents", "score": 0.8070},
+     "score": 0.8731},
     {"arxiv_id": "2609.16053", "title": "Retrieval-Driven Memory Reconsolidation for
-      Long-Term LLM Agents", "score": 0.7926}
-    // ... 2 more, down to 0.7844
+      Long-Term LLM Agents", "score": 0.8556},
+    {"arxiv_id": "2609.12436", "title": "LifeFuse-Mem: Lifecycle-Aware State Fusion Against
+      Temporary Overwriting for Long-Term Memory", "score": 0.8306}
+    // ... 2 more, down to 0.8089
   ]
 }
 ```
@@ -126,17 +134,6 @@ grounded prompt refused both.
 → **[docs/evaluation.md](docs/evaluation.md)** — construction rules, per-band metrics, the
 selection rule, and what each number is allowed to claim. Run log:
 [`eval/RESULTS.md`](eval/RESULTS.md).
-
-## Documentation
-
-This README is the snapshot. Each concept has a reference doc behind it:
-
-- **[`docs/brief.md`](docs/brief.md)** — what the assessment asked for, as numbered FRs and NFRs
-- **[`docs/architecture.md`](docs/architecture.md)** — how data flows, and what makes the ingest safe to re-run
-- **[`docs/data-model.md`](docs/data-model.md)** — the full schema, the decisions behind it, and the index measurements
-- **[`docs/rag.md`](docs/rag.md)** — embeddings, retrieval, the two refusal gates, the prompt, the failure modes
-- **[`docs/evaluation.md`](docs/evaluation.md)** — how the golden set is built and what each metric may claim
-- **[`docs/api.md`](docs/api.md)** — the endpoint reference: params, shapes, status codes
 
 ## Ingesting papers
 
@@ -285,7 +282,7 @@ docker compose up -d db    # Postgres + pgvector on :5432 — the only prerequis
 uv sync && uv run pytest
 ```
 
-127 tests. No network, no LLM, no model download — the embedding provider and LLM client sit
+No network, no LLM, no model download — the embedding provider and LLM client sit
 behind interfaces the suite fakes. They run against a throwaway `arxiv_test` database built by
 the real migrations, so the schema under test is the schema that ships.
 

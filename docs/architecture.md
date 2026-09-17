@@ -155,8 +155,8 @@ A service returns a result object; the router decides what status code that mean
 after retrieval succeeded, and the router turns that into `503` with the sources intact.
 
 Two `Protocol` seams keep the test suite off the network entirely: `Embedder` and
-`LLMClient`. The suite fakes both, which is why 127 tests run with no network, no LLM and no
-model download.
+`LLMClient`. The suite fakes both, which is why the whole suite runs with no network, no
+LLM and no model download.
 
 ## Failure behaviour
 
