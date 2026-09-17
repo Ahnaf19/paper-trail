@@ -77,9 +77,10 @@ and the answer cites them inline.
 
 ## Evaluation
 
-`/ask` refuses questions this corpus cannot answer — first on a similarity threshold, then in
-the prompt itself. Tests prove that code runs. They say nothing about whether the right papers
-come back, or what those refusals cost in real answers thrown away.
+`/ask` refuses questions this corpus cannot answer — first on a similarity threshold
+(**gate 1**, before the model is called), then in the grounded prompt itself (**gate 2**).
+Tests prove that code runs. They say nothing about whether the right papers come back, or
+what those refusals cost in real answers thrown away.
 
 ```bash
 uv run python scripts/evaluate.py             # retrieval + threshold sweep — offline, free
@@ -145,25 +146,17 @@ docker compose exec api paper ingest -c cs.AI --full              # ignore the w
 docker compose exec api paper wipe                                # delete everything
 ```
 
-- **`-c` is required and repeatable.** The query is built from `cat:` clauses, so with no
-  category there is no `search_query` to send — arXiv has no "everything" query. Codes:
-  [arXiv's taxonomy](https://arxiv.org/category_taxonomy); loaded ones via
-  `GET /stats/top-categories?n=110`, which spans 104 here.
-- **Re-running is safe and cheap.** Papers upsert on `arxiv_id` — a database constraint, not
-  application logic that can race.
-- **Incremental by watermark.** The feed is sorted by last-update descending, so one
-  high-water mark catches new _and_ revised papers.
-- **A truncated run does not fake progress.** If `--max` stops the walk above the watermark,
-  the mark stays put and the run ends `[gap left open]` rather than burying the span.
-- **Deliberately synchronous.** arXiv's Terms of Use require "a single connection at a time",
-  so there is no concurrency to win.
-
 > [!NOTE]
-> **`--max` rounds up to a whole page.** Checked _after_ each page commits, and pages are 200
-> — so any value in 1,001–1,200 yields exactly 1,200 papers.
+> `-c` is required and repeatable.
 
-→ **[docs/architecture.md](docs/architecture.md)** — the watermark's gap guard, the
-undocumented 429, retry behaviour, and every failure mode
+The query is built from `cat:` clauses, so with no category there is no `search_query` to
+send — arXiv has no "everything" query. Codes:
+[arXiv's taxonomy](https://arxiv.org/category_taxonomy); loaded ones via
+`GET /stats/top-categories?n=110`, which spans 104 here.
+
+→ **[docs/architecture.md](docs/architecture.md)** — why re-running is idempotent and cheap,
+how the watermark makes it incremental, the gap guard that stops a truncated run faking
+progress, the undocumented 429, and why the CLI is deliberately synchronous
 
 ## Data model
 
@@ -205,13 +198,13 @@ behind each decision, and both measurement tables
 Five endpoints. Every aggregate is computed by Postgres with `GROUP BY` — **the API never
 contacts arXiv**, and answers with the network disconnected.
 
-| Endpoint | Returns |
-| --- | --- |
-| `GET /health` | Liveness, including the database — so "ok" means _can serve_ |
-| `GET /stats/top-categories` | Top N categories by distinct paper count |
-| `GET /stats/top-authors` | Top N authors by distinct paper count |
-| `GET /stats/papers-over-time` | Paper counts per period and category |
-| `POST /ask` | Grounded answer from the stored abstracts, with cited sources |
+| Endpoint                      | Returns                                                       |
+| ----------------------------- | ------------------------------------------------------------- |
+| `GET /health`                 | Liveness, including the database — so "ok" means _can serve_  |
+| `GET /stats/top-categories`   | Top N categories by distinct paper count                      |
+| `GET /stats/top-authors`      | Top N authors by distinct paper count                         |
+| `GET /stats/papers-over-time` | Paper counts per period and category                          |
+| `POST /ask`                   | Grounded answer from the stored abstracts, with cited sources |
 
 ```console
 $ curl -s 'localhost:8000/stats/top-categories?n=3'
@@ -233,10 +226,10 @@ Embed the question → retrieve the nearest abstracts → answer from those alon
 A single cosine threshold cannot separate "this corpus answers that" from "it doesn't". Two
 gates, each catching what the other misses:
 
-| | Gate | Catches | Cost |
-| --- | --- | --- | --- |
-| 1 | `score >= RELEVANCE_THRESHOLD`, **before** generation | the clear cases | zero tokens |
-| 2 | the grounded prompt — _answer only from these abstracts_ | what slips past gate 1 | one LLM call |
+|     | Gate                                                     | Catches                | Cost         |
+| --- | -------------------------------------------------------- | ---------------------- | ------------ |
+| 1   | `score >= RELEVANCE_THRESHOLD`, **before** generation    | the clear cases        | zero tokens  |
+| 2   | the grounded prompt — _answer only from these abstracts_ | what slips past gate 1 | one LLM call |
 
 ```console
 "What is the CAP theorem?"           top-1 0.687  → gate 1 refuses, LLM never called
@@ -262,18 +255,18 @@ posture, and what every failure returns
 
 All configuration is environment variables; `.env.example` lists them.
 
-| Variable | Default | Notes |
-| --- | --- | --- |
-| `POSTGRES_USER` / `_PASSWORD` / `_DB` | `arxiv` | Used by the database container |
-| `DATABASE_URL` | `…@localhost:5432/arxiv` | For the CLI **from your host**; the API container overrides it to reach `db` |
-| `LLM_API_KEY` | — | 🔴 The only value to be set. Free at [console.groq.com/keys](https://console.groq.com/keys), no card |
-| `LLM_BASE_URL` | `https://api.groq.com/openai/v1` | Any OpenAI-compatible endpoint |
-| `LLM_MODEL` | `openai/gpt-oss-20b` | Tested 15 Sep 2026 — see the warning above |
-| `RELEVANCE_THRESHOLD` | `0.75` | Measured, not chosen → [evaluation](docs/evaluation.md#the-threshold-sweep) |
-| `RETRIEVAL_TOP_K` | `5` | `10` measured and rejected → [rag](docs/rag.md#retrieval) |
-| `ARXIV_PAGE_SIZE` | `200` | arXiv's documented ceiling is 2000 |
-| `ARXIV_MIN_REQUEST_INTERVAL` | `3.0` | arXiv's Terms of Use floor. Cannot be set lower |
-| `LOG_LEVEL` | `INFO` | |
+| Variable                              | Default                          | Notes                                                                                                |
+| ------------------------------------- | -------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| `POSTGRES_USER` / `_PASSWORD` / `_DB` | `arxiv`                          | Used by the database container                                                                       |
+| `DATABASE_URL`                        | `…@localhost:5432/arxiv`         | For the CLI **from your host**; the API container overrides it to reach `db`                         |
+| `LLM_API_KEY`                         | —                                | 🔴 The only value to be set. Free at [console.groq.com/keys](https://console.groq.com/keys), no card |
+| `LLM_BASE_URL`                        | `https://api.groq.com/openai/v1` | Any OpenAI-compatible endpoint                                                                       |
+| `LLM_MODEL`                           | `openai/gpt-oss-20b`             | Tested 15 Sep 2026 — see the warning above                                                           |
+| `RELEVANCE_THRESHOLD`                 | `0.75`                           | Measured, not chosen → [evaluation](docs/evaluation.md#the-threshold-sweep)                          |
+| `RETRIEVAL_TOP_K`                     | `5`                              | `10` measured and rejected → [rag](docs/rag.md#retrieval)                                            |
+| `ARXIV_PAGE_SIZE`                     | `200`                            | arXiv's documented ceiling is 2000                                                                   |
+| `ARXIV_MIN_REQUEST_INTERVAL`          | `3.0`                            | arXiv's Terms of Use floor. Cannot be set lower                                                      |
+| `LOG_LEVEL`                           | `INFO`                           |                                                                                                      |
 
 > [!IMPORTANT]
 > **`LLM_API_KEY` is the only value you must supply.** Without it everything works except
@@ -317,7 +310,7 @@ alembic/versions/    migrations, generated from `app/models` and read before com
 tests/               pytest — no network, no LLM, no model download
 scripts/             build_golden_set.py (one-off, needs a key) · evaluate.py (the runner)
 eval/                golden.jsonl + its corpus fingerprint · RESULTS.md · one JSON per run
-docs/                brief · architecture · data-model · rag · evaluation · api
+docs/                brief · architecture · data-model · rag · evaluation · api · img/
 ```
 
 ## Known limitations
