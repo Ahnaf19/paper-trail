@@ -2,16 +2,15 @@
 
 [← README](../README.md) · siblings: [architecture](architecture.md) · [data model](data-model.md) · [RAG](rag.md) · [evaluation](evaluation.md)
 
-Base URL `http://localhost:8000` · JSON in, JSON out · no authentication.
-Interactive docs (OpenAPI) at **`/docs`** while the service is running.
+Base URL `http://localhost:8000` · Interactive docs (OpenAPI) at **`/docs`** while running.
 
-| | |
-|---|---|
-| [`GET /health`](#get-health) | Liveness — including the database |
-| [`GET /stats/top-categories`](#get-statstop-categories) | Top N categories by paper count |
-| [`GET /stats/top-authors`](#get-statstop-authors) | Top N authors by paper count |
-| [`GET /stats/papers-over-time`](#get-statspapers-over-time) | Paper counts per period and category |
-| [`POST /ask`](#post-ask) | Grounded answer from the stored abstracts |
+|                                                             |                                           |
+| ----------------------------------------------------------- | ----------------------------------------- |
+| [`GET /health`](#get-health)                                | Liveness — including the database         |
+| [`GET /stats/top-categories`](#get-statstop-categories)     | Top N categories by paper count           |
+| [`GET /stats/top-authors`](#get-statstop-authors)           | Top N authors by paper count              |
+| [`GET /stats/papers-over-time`](#get-statspapers-over-time) | Paper counts per period and category      |
+| [`POST /ask`](#post-ask)                                    | Grounded answer from the stored abstracts |
 
 ## Conventions
 
@@ -31,18 +30,18 @@ Interactive docs (OpenAPI) at **`/docs`** while the service is running.
 
 ## `GET /health`
 
-Liveness for the container healthcheck. Queries the database, so "ok" means *can serve*,
-not *process is alive*.
+Liveness for the container healthcheck. Queries the database, so "ok" means _can serve_,
+not _process is alive_.
 
 ```console
 $ curl -s localhost:8000/health
 {"status": "ok"}
 ```
 
-| Status | Body |
-|---|---|
-| `200` | `{"status": "ok"}` |
-| `503` | `{"detail": "database unavailable"}` |
+| Status | Body                                 |
+| ------ | ------------------------------------ |
+| `200`  | `{"status": "ok"}`                   |
+| `503`  | `{"detail": "database unavailable"}` |
 
 ---
 
@@ -52,16 +51,16 @@ Categories ranked by how many distinct papers carry them.
 
 **Query parameters**
 
-| Name | Type | Range | Default | Notes |
-|---|---|---|---|---|
-| `n` | integer | `1`–`100` | `10` | Out of range is a `422`. |
+| Name | Type    | Range     | Default | Notes                    |
+| ---- | ------- | --------- | ------- | ------------------------ |
+| `n`  | integer | `1`–`100` | `10`    | Out of range is a `422`. |
 
 **Response** — `[{ category, count }]`
 
-| Field | Type | Meaning |
-|---|---|---|
-| `category` | string | arXiv category code, e.g. `cs.LG` |
-| `count` | integer | Distinct papers in that category |
+| Field      | Type    | Meaning                           |
+| ---------- | ------- | --------------------------------- |
+| `category` | string  | arXiv category code, e.g. `cs.LG` |
+| `count`    | integer | Distinct papers in that category  |
 
 ```console
 $ curl -s 'localhost:8000/stats/top-categories?n=5'
@@ -82,9 +81,9 @@ Authors ranked by distinct papers.
 
 **Query parameters**
 
-| Name | Type | Range | Default | Notes |
-|---|---|---|---|---|
-| `n` | integer | `1`–`100` | `10` | Out of range is a `422`. |
+| Name | Type    | Range     | Default | Notes                    |
+| ---- | ------- | --------- | ------- | ------------------------ |
+| `n`  | integer | `1`–`100` | `10`    | Out of range is a `422`. |
 
 **Response** — `[{ author, count }]`
 
@@ -107,22 +106,22 @@ appeared, not `updated`, which moves whenever an author fixes a typo.
 
 **Query parameters**
 
-| Name | Type | Accepted values | Default | Notes |
-|---|---|---|---|---|
-| `granularity` | enum | `month` \| `year` | `month` | Anything else is a `422`. |
-| `category` | string | any code the corpus holds | *all categories* | Unknown code is a `404`, not `[]`. |
-| `from` | date | `YYYY-MM-DD` | unbounded | **Inclusive** of that day. |
-| `to` | date | `YYYY-MM-DD` | unbounded | **Inclusive** of that day. |
+| Name          | Type   | Accepted values           | Default          | Notes                              |
+| ------------- | ------ | ------------------------- | ---------------- | ---------------------------------- |
+| `granularity` | enum   | `month` \| `year`         | `month`          | Anything else is a `422`.          |
+| `category`    | string | any code the corpus holds | _all categories_ | Unknown code is a `404`, not `[]`. |
+| `from`        | date   | `YYYY-MM-DD`              | unbounded        | **Inclusive** of that day.         |
+| `to`          | date   | `YYYY-MM-DD`              | unbounded        | **Inclusive** of that day.         |
 
 `from` later than `to` is a `422`.
 
 **Response** — `[{ period, category, count }]`
 
-| Field | Type | Meaning |
-|---|---|---|
-| `period` | string | `YYYY-MM` for month, `YYYY` for year |
-| `category` | string | arXiv category code |
-| `count` | integer | Distinct papers published in that bucket |
+| Field      | Type    | Meaning                                  |
+| ---------- | ------- | ---------------------------------------- |
+| `period`   | string  | `YYYY-MM` for month, `YYYY` for year     |
+| `category` | string  | arXiv category code                      |
+| `count`    | integer | Distinct papers published in that bucket |
 
 **Default — every category, by month**
 
@@ -179,19 +178,19 @@ those alone. Design and threshold calibration are in [docs/rag.md](rag.md#where-
 
 **Request body**
 
-| Field | Type | Constraints | Notes |
-|---|---|---|---|
+| Field      | Type   | Constraints                      | Notes                            |
+| ---------- | ------ | -------------------------------- | -------------------------------- |
 | `question` | string | 1–1000 chars **after stripping** | `""` and `"   "` are both `422`. |
 
 **Response** — `{ answer, sources }`
 
-| Field | Type | Meaning |
-|---|---|---|
-| `answer` | string | Grounded answer, or the refusal sentence |
-| `sources` | array | Papers **passed to the model as context** — never papers that merely ranked |
-| `sources[].arxiv_id` | string | Version-stripped id, e.g. `2609.12655` |
-| `sources[].title` | string | Paper title |
-| `sources[].score` | float | Cosine similarity to the question, 4 dp |
+| Field                | Type   | Meaning                                                                     |
+| -------------------- | ------ | --------------------------------------------------------------------------- |
+| `answer`             | string | Grounded answer, or the refusal sentence                                    |
+| `sources`            | array  | Papers **passed to the model as context** — never papers that merely ranked |
+| `sources[].arxiv_id` | string | Version-stripped id, e.g. `2609.12655`                                      |
+| `sources[].title`    | string | Paper title                                                                 |
+| `sources[].score`    | float  | Cosine similarity to the question, 4 dp                                     |
 
 **Answered**
 
@@ -241,15 +240,15 @@ $ curl -s localhost:8000/ask -H 'content-type: application/json' \
 - **`sources` on a `503` is still useful** — those are the most relevant papers, and the
   answer text names why generation failed.
 - Answers come from **abstracts only**. arXiv's API never returns full text, so
-  *"what learning rate did they use?"* is outside what this can be right about.
+  _"what learning rate did they use?"_ is outside what this can be right about.
 
 ---
 
 ## Status codes
 
-| Code | Meaning | Where |
-|---|---|---|
-| `200` | Success — **including an honest refusal from `/ask`** | all |
-| `404` | `category` is not in the corpus | `papers-over-time` |
-| `422` | Bad parameter: `n` out of range · unknown `granularity` · `from` > `to` · empty or over-long `question` | all |
-| `503` | Database unreachable (`{"detail": "database unavailable"}`), or the LLM is unreachable (`sources` preserved) | all · `/ask` |
+| Code  | Meaning                                                                                                      | Where              |
+| ----- | ------------------------------------------------------------------------------------------------------------ | ------------------ |
+| `200` | Success — **including an honest refusal from `/ask`**                                                        | all                |
+| `404` | `category` is not in the corpus                                                                              | `papers-over-time` |
+| `422` | Bad parameter: `n` out of range · unknown `granularity` · `from` > `to` · empty or over-long `question`      | all                |
+| `503` | Database unreachable (`{"detail": "database unavailable"}`), or the LLM is unreachable (`sources` preserved) | all · `/ask`       |

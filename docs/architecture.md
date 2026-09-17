@@ -9,12 +9,12 @@ LLM.**
 ```
   ┌─ write path ──────────────────────────────────────────────────────────────┐
   │                                                                           │
-  │   arXiv Atom API ──▶ fetch ──▶ parse ──▶ upsert ──▶ embed ──▶ watermark    │
+  │   arXiv Atom API ──▶ fetch ──▶ parse ──▶ upsert ──▶ embed ──▶ watermark   │
   │   1 req / 3 s          │         │         │          │          │        │
   │   backoff on 429       │         │         └──────────┘          │        │
   │                        │         │        one transaction        │        │
   │                        │         │          per page             │        │
-  │                    ArxivClient  parse_feed   upsert_papers   _advance_     │
+  │                    ArxivClient  parse_feed   upsert_papers   _advance_    │
   │                                              refresh_embeddings watermark │
   └───────────────────────────────────────────────────────────────────────────┘
                                       │
@@ -25,7 +25,7 @@ LLM.**
        ▼                                                             ▼
   ┌─ read: aggregates ─────────────┐              ┌─ read: answers ──────────────────┐
   │  GET /stats/*                  │              │  POST /ask                       │
-  │  GROUP BY, computed in SQL     │              │  embed ▸ top-k ▸ gate ▸ generate  │
+  │  GROUP BY, computed in SQL     │              │  embed ▸ top-k ▸ gate ▸ generate │
   │  no network at all             │              │            │                     │
   └────────────────────────────────┘              │            ▼                     │
                                                   │  OpenAI-compatible LLM  [ext]    │
@@ -47,13 +47,13 @@ be committed without its vector, because both writes are in the same transaction
 
 ### Rate limiting, and the 429 that isn't documented
 
-arXiv's Terms of Use ask for one request every 3 seconds and *"a single connection at a
-time"*. The client sleeps the remainder of that interval before every request, and logs
+arXiv's Terms of Use ask for one request every 3 seconds and _"a single connection at a
+time"_. The client sleeps the remainder of that interval before every request, and logs
 **after** the sleep — so the gap between two log lines is the throttle, provable from the
 output.
 
 The documented rule is necessary but not sufficient. Verified 14 Sep 2026: a first
-*uncached* query returned **HTTP 429 repeatedly**, while a common cached query returned 200
+_uncached_ query returned **HTTP 429 repeatedly**, while a common cached query returned 200
 instantly from the Fastly edge. Neither arXiv's API docs nor its Terms of Use mention 429 or
 any penalty mechanism. So the client also treats `429` and `5xx` as retryable with bounded
 exponential backoff (`2s, 4s, 8s…`, honouring `Retry-After` when present), and exits
@@ -81,10 +81,10 @@ regardless of row count, never one statement per author.
 ### The watermark, and why a truncated run refuses to advance it
 
 The feed is sorted by `lastUpdatedDate` descending, so **one high-water mark catches new
-*and* revised papers** — a revision bumps `updated` and floats back to the top. The scan
+_and_ revised papers** — a revision bumps `updated` and floats back to the top. The scan
 stops once an entire page predates the mark.
 
-The mark asserts *"everything at or above this is ingested"*. That only holds if the walk
+The mark asserts _"everything at or above this is ingested"_. That only holds if the walk
 came down far enough to **meet the previous mark**. A run cut short by `--max` can stop
 above it, leaving a span that was never fetched — and advancing over that span would bury it
 permanently below the next run's stop threshold.
@@ -97,7 +97,7 @@ The same guard covers exceptions: the mark is written only after the loop exits 
 a crash never records progress that was not made.
 
 > [!NOTE]
-> **`--max` rounds up to a whole page.** It is checked *after* each page commits, and pages
+> **`--max` rounds up to a whole page.** It is checked _after_ each page commits, and pages
 > are 200 — so any value in 1,001–1,200 yields exactly 1,200 papers.
 
 ### The watermark is keyed by the category set
@@ -160,15 +160,15 @@ LLM and no model download.
 
 ## Failure behaviour
 
-| What fails | What happens |
-| --- | --- |
-| arXiv returns 429 / 5xx | Bounded exponential backoff, `Retry-After` honoured; exits non-zero after `ARXIV_MAX_RETRIES` with the database consistent |
-| Ingest crashes mid-run | The in-flight page rolls back; committed pages stand; the watermark is not advanced, so a re-run repairs it |
-| `--max` stops the walk early | `[gap left open]` — the mark stays put, nothing is silently skipped |
-| No `LLM_API_KEY` | `/ask` returns `503` with the retrieved papers in `sources` and an explicit message |
-| LLM times out, is rate limited, or the model id is retired | Same `503` shape, with a message naming which |
-| Database unreachable | `GET /health` reports it — "ok" means *can serve*, not *process is alive* |
-| Any unhandled error | `{"detail": "<message>"}`. No stack traces, no driver text, no provider body echoed back |
+| What fails                                                 | What happens                                                                                                               |
+| ---------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| arXiv returns 429 / 5xx                                    | Bounded exponential backoff, `Retry-After` honoured; exits non-zero after `ARXIV_MAX_RETRIES` with the database consistent |
+| Ingest crashes mid-run                                     | The in-flight page rolls back; committed pages stand; the watermark is not advanced, so a re-run repairs it                |
+| `--max` stops the walk early                               | `[gap left open]` — the mark stays put, nothing is silently skipped                                                        |
+| No `LLM_API_KEY`                                           | `/ask` returns `503` with the retrieved papers in `sources` and an explicit message                                        |
+| LLM times out, is rate limited, or the model id is retired | Same `503` shape, with a message naming which                                                                              |
+| Database unreachable                                       | `GET /health` reports it — "ok" means _can serve_, not _process is alive_                                                  |
+| Any unhandled error                                        | `{"detail": "<message>"}`. No stack traces, no driver text, no provider body echoed back                                   |
 
 The LLM client never logs the exception object or the provider's response body — a base URL
 can carry a key in its query string.

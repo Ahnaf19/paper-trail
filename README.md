@@ -136,7 +136,9 @@ docker compose exec api paper wipe                                # delete every
 > `-c` (category) is required and repeatable.
 
 The query is built from `cat:` clauses, so with no category there is no `search_query` to
-send — arXiv has no "everything" query. Codes: [arXiv's taxonomy](https://arxiv.org/category_taxonomy); loaded ones via `GET /stats/top-categories?n=110`
+send — arXiv has no "everything" query.
+
+Category code reference: [arXiv's taxonomy](https://arxiv.org/category_taxonomy)
 
 ## Data model
 
