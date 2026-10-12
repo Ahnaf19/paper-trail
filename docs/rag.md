@@ -6,10 +6,7 @@ How a question becomes an answer — and, more often than it sounds, how it beco
 refusal.
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="img/askflow-dark.svg">
-    <img alt="The /ask pipeline. A question is embedded by bge-small on a worker thread because encoding is CPU-bound, then retrieve top-k runs one SQL join so a source cannot fail to resolve. Gate 1 is deterministic and runs before the model: anything below the threshold t refuses immediately, the LLM is never called and sources come back empty. Otherwise fit_context selects only the papers that fit the budget, and gate 2 — the grounded prompt — either refuses probabilistically at the cost of one LLM call, still returning the searched papers as sources, or produces an answer with arXiv ids cited inline, every one of them a joined row." src="img/askflow-light.svg" width="880">
-  </picture>
+  <img alt="The /ask pipeline. A question is embedded by bge-small on a worker thread because encoding is CPU-bound, then retrieve top-k runs one SQL join so a source cannot fail to resolve. Gate 1 is deterministic and runs before the model: anything below the threshold t refuses immediately, the LLM is never called and sources come back empty. Otherwise fit_context selects only the papers that fit the budget, and gate 2 — the grounded prompt — either refuses probabilistically at the cost of one LLM call, still returning the searched papers as sources, or produces an answer with arXiv ids cited inline, every one of them a joined row." src="img/askflow.svg" width="880">
 </p>
 
 ## Embeddings

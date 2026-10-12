@@ -109,19 +109,13 @@ uv run python scripts/evaluate.py --with-llm  # + end-to-end answer/refuse behav
 92/97 retrieval ceiling:
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/img/threshold-dark.svg">
-    <img alt="Threshold sweep. From 0.70 to 0.75 the only answers lost are the 5 retrieval never found, while must-refuse questions let through fall from 4 to 2. At 0.78 a sixth answer is lost, and 0.80 reaches zero false passes only by losing ten answers." src="docs/img/threshold-light.svg" width="800">
-  </picture>
+  <img alt="Threshold sweep. From 0.70 to 0.75 the only answers lost are the 5 retrieval never found, while must-refuse questions let through fall from 4 to 2. At 0.78 a sixth answer is lost, and 0.80 reaches zero false passes only by losing ten answers." src="docs/img/threshold.svg" width="800">
 </p>
 
 **Both gates, end to end** — all 24 must-refuse, plus 40 positives sampled from the 97 (limited LLM calls available due to free tier):
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="docs/img/gates-dark.svg">
-    <img alt="End-to-end outcomes. Of 24 must-refuse questions, 22 stop at gate 1 with zero tokens and 2 at gate 2; none are answered. Of 40 positives sampled from the 97, 37 cite the correct paper and none are wrongly refused." src="docs/img/gates-light.svg" width="820">
-  </picture>
+  <img alt="End-to-end outcomes. Of 24 must-refuse questions, 22 stop at gate 1 with zero tokens and 2 at gate 2; none are answered. Of 40 positives sampled from the 97, 37 cite the correct paper and none are wrongly refused." src="docs/img/gates.svg" width="820">
 </p>
 
 ## Ingesting papers

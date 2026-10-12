@@ -143,10 +143,7 @@ has none — Postgres reads every row regardless.
 8.7× faster — and not worth it, because of where that millisecond sits:
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="img/latency-dark.svg">
-    <img alt="Latency budget for one /ask request: embed and retrieve together take 11 ms inside a request whose LLM call takes 1 to 3 seconds. HNSW would save 1.0 ms of that." src="img/latency-light.svg" width="800">
-  </picture>
+  <img alt="Latency budget for one /ask request: embed and retrieve together take 11 ms inside a request whose LLM call takes 1 to 3 seconds. HNSW would save 1.0 ms of that." src="img/latency.svg" width="800">
 </p>
 
 The trade: **under 0.1% of end-to-end latency, bought with an approximate result and an index

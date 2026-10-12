@@ -17,10 +17,7 @@ uv run python scripts/evaluate.py --with-llm  # + end to end
 Four reports off one dataset, each isolating a different stage:
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="img/evalflow-dark.svg">
-    <img alt="Evaluation flow. eval/golden.jsonl (121 rows: 97 positives + 24 must-refuse) feeds Report 0, coverage, which decides which labelled papers exist in this corpus. It then splits into two lanes. The offline lane, free and seconds long, runs one Probe per question — embed, retrieve at k=20, record the rank of the gold paper — and both Report 1 (retrieval: recall@1/5/10 and MRR@20 over 97 rows) and Report 2 (the threshold sweep over 97 + 24 rows, yielding t = 0.75) are computed from those same 121 probes with no further queries. The --with-llm lane, costing about 85k tokens, runs Report 3 end to end on 40 sampled positives plus all 24 must-refuse by calling the real answer_question(): 0 of 24 answered anyway, 0 of 40 wrongly refused, 37 of 40 citing the correct paper." src="img/evalflow-light.svg" width="840">
-  </picture>
+  <img alt="Evaluation flow. eval/golden.jsonl (121 rows: 97 positives + 24 must-refuse) feeds Report 0, coverage, which decides which labelled papers exist in this corpus. It then splits into two lanes. The offline lane, free and seconds long, runs one Probe per question — embed, retrieve at k=20, record the rank of the gold paper — and both Report 1 (retrieval: recall@1/5/10 and MRR@20 over 97 rows) and Report 2 (the threshold sweep over 97 + 24 rows, yielding t = 0.75) are computed from those same 121 probes with no further queries. The --with-llm lane, costing about 85k tokens, runs Report 3 end to end on 40 sampled positives plus all 24 must-refuse by calling the real answer_question(): 0 of 24 answered anyway, 0 of 40 wrongly refused, 37 of 40 citing the correct paper." src="img/evalflow.svg" width="840">
 </p>
 
 ## The dataset
@@ -61,10 +58,7 @@ Four reports off one dataset, each isolating a different stage:
 | MRR@20 | 0.918 | | | | | | |
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="img/recall-dark.svg">
-    <img alt="Recall by band. big scores 0.947 at both k. mid rises from 0.824 at k=1 to 0.971 at k=5 — the paper is found, just not first. thin is flat at 0.920 for both." src="img/recall-light.svg" width="760">
-  </picture>
+  <img alt="Recall by band. big scores 0.947 at both k. mid rises from 0.824 at k=1 to 0.971 at k=5 — the paper is found, just not first. thin is flat at 0.920 for both." src="img/recall.svg" width="760">
 </p>
 
 Bands are reported separately because thin categories are deliberately over-sampled — **the
@@ -86,10 +80,7 @@ halves at once: the real answers it **throws away**, against the must-refuse que
 **lets through**.
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="img/threshold-dark.svg">
-    <img alt="Threshold sweep. From 0.70 to 0.75 the only answers lost are the 5 retrieval never found, while must-refuse questions let through fall from 4 to 2. At 0.78 a sixth answer is lost, and 0.80 reaches zero false passes only by losing ten answers." src="img/threshold-light.svg" width="800">
-  </picture>
+  <img alt="Threshold sweep. From 0.70 to 0.75 the only answers lost are the 5 retrieval never found, while must-refuse questions let through fall from 4 to 2. At 0.78 a sixth answer is lost, and 0.80 reaches zero false passes only by losing ten answers." src="img/threshold.svg" width="800">
 </p>
 
 - **The ceiling is 92 of 97.** Retrieval finds the correct paper for 92 questions, so no `t`
@@ -113,10 +104,7 @@ asymmetry is deliberate:
   already measured exactly, and for nothing, by the offline report.
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="img/gates-dark.svg">
-    <img alt="End-to-end outcomes. Of 24 must-refuse questions, 22 stop at gate 1 with zero tokens and 2 at gate 2; none are answered. Of 40 positives sampled from the 97, 37 cite the correct paper and none are wrongly refused." src="img/gates-light.svg" width="820">
-  </picture>
+  <img alt="End-to-end outcomes. Of 24 must-refuse questions, 22 stop at gate 1 with zero tokens and 2 at gate 2; none are answered. Of 40 positives sampled from the 97, 37 cite the correct paper and none are wrongly refused." src="img/gates.svg" width="820">
 </p>
 
 | Positives (40) | | Must-refuse (24) | |

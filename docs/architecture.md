@@ -7,10 +7,7 @@ nothing else — **the read paths never contact arXiv, and the write path never 
 LLM.**
 
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="img/architecture-dark.svg">
-    <img alt="System architecture. The write path, paper ingest, is the only thing that talks to arXiv: the Atom API at one request per 3 seconds with backoff on 429, then fetch (ArxivClient), parse (parse_feed), upsert (upsert_papers) and embed (refresh_embeddings). Upsert and embed sit inside one transaction per page, so a paper cannot commit without its vector. The watermark advances separately, after the loop, and only if the walk reached the previous mark. Everything lands in PostgreSQL with pgvector — papers, authors, categories and 384-dim vectors — which then feeds two read paths: GET /stats/*, three GROUP BY queries computed by Postgres with no network at all, and POST /ask, which embeds, retrieves top-k, gates and generates against an OpenAI-compatible LLM." src="img/architecture-light.svg" width="860">
-  </picture>
+  <img alt="System architecture. The write path, paper ingest, is the only thing that talks to arXiv: the Atom API at one request per 3 seconds with backoff on 429, then fetch (ArxivClient), parse (parse_feed), upsert (upsert_papers) and embed (refresh_embeddings). Upsert and embed sit inside one transaction per page, so a paper cannot commit without its vector. The watermark advances separately, after the loop, and only if the walk reached the previous mark. Everything lands in PostgreSQL with pgvector — papers, authors, categories and 384-dim vectors — which then feeds two read paths: GET /stats/*, three GROUP BY queries computed by Postgres with no network at all, and POST /ask, which embeds, retrieves top-k, gates and generates against an OpenAI-compatible LLM." src="img/architecture.svg" width="860">
 </p>
 
 ## The write path — `paper ingest`
